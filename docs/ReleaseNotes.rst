@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-new-naked-ptr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-naked-ptr.html>`_ check
+
+  FIXME: add release notes.
+
 - New module `fuchsia` for Fuchsia style checks.
 
 - New module `objc` for Objective-C style checks.

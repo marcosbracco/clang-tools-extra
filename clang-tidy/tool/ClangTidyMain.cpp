@@ -532,6 +532,11 @@ extern volatile int HICPPModuleAnchorSource;
 static int LLVM_ATTRIBUTE_UNUSED HICPPModuleAnchorDestination =
     HICPPModuleAnchorSource;
 
+// This anchor is used to force the linker to link the CppCoreGuidelinesModule.
+extern volatile int NodeCppModuleAnchorSource;
+static int LLVM_ATTRIBUTE_UNUSED NodeCppModuleAnchorDestination =
+    NodeCppModuleAnchorSource;
+
 } // namespace tidy
 } // namespace clang
 
