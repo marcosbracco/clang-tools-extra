@@ -10,8 +10,8 @@
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
-#include "NakedPtrCheck.h"
-#include "NewNakedPtrCheck.h"
+#include "NewExprCheck.h"
+#include "PtrArithmeticCheck.h"
 
 namespace clang {
 namespace tidy {
@@ -21,10 +21,10 @@ namespace nodecpp {
 class NodeCppModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
-    CheckFactories.registerCheck<NakedPtrCheck>(
-        "nodecpp-naked-ptr");
-    CheckFactories.registerCheck<NewNakedPtrCheck>(
-        "nodecpp-new-naked-ptr");
+    CheckFactories.registerCheck<NewExprCheck>(
+        "nodecpp-new-expr");
+    CheckFactories.registerCheck<PtrArithmeticCheck>(
+        "nodecpp-ptr-arithmetic");
   }
 };
 

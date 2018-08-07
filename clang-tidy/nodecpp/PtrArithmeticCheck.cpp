@@ -1,4 +1,4 @@
-//===--- NakedPtrCheck.cpp - clang-tidy------------------------------------===//
+//===--- PtrArithmeticCheck.cpp - clang-tidy-------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NakedPtrCheck.h"
+#include "PtrArithmeticCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,7 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NakedPtrCheck::registerMatchers(MatchFinder *Finder) {
+void PtrArithmeticCheck::registerMatchers(MatchFinder *Finder) {
 	//copied from ProBoundsPointerArithmeticCheck.cpp
 
   if (!getLangOpts().CPlusPlus)
@@ -49,7 +49,7 @@ void NakedPtrCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-void NakedPtrCheck::check(const MatchFinder::MatchResult &Result) {
+void PtrArithmeticCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedExpr = Result.Nodes.getNodeAs<Expr>("expr");
 
   diag(MatchedExpr->getExprLoc(), "do not use pointer arithmetic");

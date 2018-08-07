@@ -31,6 +31,12 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-ptr' check was renamed to `nodecpp-ptr-arithmetic
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-ptr-arithmetic.html>`_
+
+- The 'nodecpp-new-naked-ptr' check was renamed to `nodecpp-new-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-expr.html>`_
+
 - New `nodecpp-naked-ptr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr.html>`_ check
 

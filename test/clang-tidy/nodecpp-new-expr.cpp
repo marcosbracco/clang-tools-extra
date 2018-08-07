@@ -1,8 +1,8 @@
-// RUN: %check_clang_tidy %s nodecpp-new-naked-ptr %t
+// RUN: %check_clang_tidy %s nodecpp-new-expr %t
 
 // FIXME: Add something that triggers the check here.
 void f();
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-naked-ptr]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 
 // FIXME: Verify the applied fix.
 //   * Make the CHECK patterns specific enough and try to make verified lines

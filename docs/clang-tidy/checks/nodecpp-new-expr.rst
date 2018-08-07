@@ -1,6 +1,6 @@
-.. title:: clang-tidy - nodecpp-naked-ptr
+.. title:: clang-tidy - nodecpp-new-expr
 
-nodecpp-naked-ptr
-=================
+nodecpp-new-expr
+================
 
 FIXME: Describe what patterns does the check detect and why. Give examples.

@@ -1,8 +1,8 @@
-// RUN: %check_clang_tidy %s nodecpp-naked-ptr %t
+// RUN: %check_clang_tidy %s nodecpp-ptr-arithmetic %t
 
 // FIXME: Add something that triggers the check here.
 void f();
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
 
 // FIXME: Verify the applied fix.
 //   * Make the CHECK patterns specific enough and try to make verified lines
