@@ -10,8 +10,12 @@
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
+#include "ArrayTypeCheck.h"
+#include "NakedPtrCheck.h"
+#include "NewArrayExprCheck.h"
 #include "NewExprCheck.h"
 #include "PtrArithmeticCheck.h"
+#include "StaticStorageCheck.h"
 
 namespace clang {
 namespace tidy {
@@ -21,10 +25,18 @@ namespace nodecpp {
 class NodeCppModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
+    CheckFactories.registerCheck<ArrayTypeCheck>(
+        "nodecpp-array-type");
+    CheckFactories.registerCheck<NakedPtrCheck>(
+        "nodecpp-naked-ptr");
+    CheckFactories.registerCheck<NewArrayExprCheck>(
+        "nodecpp-new-array-expr");
     CheckFactories.registerCheck<NewExprCheck>(
         "nodecpp-new-expr");
     CheckFactories.registerCheck<PtrArithmeticCheck>(
         "nodecpp-ptr-arithmetic");
+    CheckFactories.registerCheck<StaticStorageCheck>(
+        "nodecpp-static-storage");
   }
 };
 

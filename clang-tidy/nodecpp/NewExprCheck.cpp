@@ -31,9 +31,10 @@ void NewExprCheck::registerMatchers(MatchFinder *Finder) {
   const auto OwnReset = cxxMemberCallExpr(has(
                      memberExpr(allOf(
 						 member(hasName("reset")), has(declRefExpr(OwnerType))))));
-
+  
+  //new array is handled separatelly
   const auto badNew = cxxNewExpr(
-	  unless(anyOf(hasParent(OwnCtor),
+	  unless(anyOf(isArray(), hasParent(OwnCtor),
 		  hasParent(OwnReset)))).bind("expr");
 
   Finder->addMatcher(badNew, this);

@@ -1,4 +1,4 @@
-//===--- PtrArithmeticCheck.h - clang-tidy----------------------------*- C++ -*-===//
+//===--- NewArrayExprCheck.h - clang-tidy------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_PTRARITHMETICCHEECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_PTRARITHMETICCHEECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H
 
 #include "../ClangTidy.h"
 
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-ptr-arithmetic.html
-class PtrArithmeticCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-array-expr.html
+class NewArrayExprCheck : public ClangTidyCheck {
 public:
-  PtrArithmeticCheck(StringRef Name, ClangTidyContext *Context)
+  NewArrayExprCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
@@ -32,4 +32,4 @@ public:
 } // namespace tidy
 } // namespace clang
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_PTRARITHMETICCHEECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H

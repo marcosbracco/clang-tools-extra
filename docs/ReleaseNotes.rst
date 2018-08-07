@@ -31,6 +31,26 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-new-array-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-array-expr.html>`_ check
+
+  FIXME: add release notes.
+
+- New `nodecpp-naked-ptr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr.html>`_ check
+
+  FIXME: add release notes.
+
+- New `nodecpp-array-type
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-array-type.html>`_ check
+
+  FIXME: add release notes.
+
+- New `nodecpp-static-storage
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-static-storage.html>`_ check
+
+  FIXME: add release notes.
+
 - The 'nodecpp-naked-ptr' check was renamed to `nodecpp-ptr-arithmetic
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-ptr-arithmetic.html>`_
 

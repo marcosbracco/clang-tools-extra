@@ -175,8 +175,12 @@ Clang-Tidy Checks
    modernize-use-using
    mpi-buffer-deref
    mpi-type-mismatch
+   nodecpp-array-type
+   nodecpp-naked-ptr
+   nodecpp-new-array-expr
    nodecpp-new-expr
    nodecpp-ptr-arithmetic
+   nodecpp-static-storage
    objc-avoid-nserror-init
    objc-avoid-spinlock
    objc-forbidden-subclassing
