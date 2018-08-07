@@ -10,6 +10,7 @@
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
+#include "NakedPtrCheck.h"
 #include "NewNakedPtrCheck.h"
 
 namespace clang {
@@ -20,6 +21,8 @@ namespace nodecpp {
 class NodeCppModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
+    CheckFactories.registerCheck<NakedPtrCheck>(
+        "nodecpp-naked-ptr");
     CheckFactories.registerCheck<NewNakedPtrCheck>(
         "nodecpp-new-naked-ptr");
   }

@@ -175,6 +175,7 @@ Clang-Tidy Checks
    modernize-use-using
    mpi-buffer-deref
    mpi-type-mismatch
+   nodecpp-naked-ptr
    nodecpp-new-naked-ptr
    objc-avoid-nserror-init
    objc-avoid-spinlock

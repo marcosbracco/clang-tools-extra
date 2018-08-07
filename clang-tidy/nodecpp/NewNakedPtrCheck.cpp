@@ -19,16 +19,31 @@ namespace nodecpp {
 
 void NewNakedPtrCheck::registerMatchers(MatchFinder *Finder) {
 
-  Finder->addMatcher(cxxNewExpr().bind("expr"), this);
+  if (!getLangOpts().CPlusPlus)
+    return;
+
+  const auto OwnerDecl = cxxRecordDecl(hasName("::std::unique_ptr"));
+//    const auto FakeDecl = cxxRecordDecl(hasName("fake"));
+  const auto OwnerType = hasType(OwnerDecl);
+//  const auto IsNakedPtrType = hasType(pointerType());
+
+  const auto OwnCtor = cxxConstructExpr(OwnerType);
+  const auto OwnReset = cxxMemberCallExpr(has(
+                     memberExpr(allOf(
+						 member(hasName("reset")), has(declRefExpr(OwnerType))))));
+
+  const auto badNew = cxxNewExpr(
+	  unless(anyOf(hasParent(OwnCtor),
+		  hasParent(OwnReset)))).bind("badNew");
+
+  Finder->addMatcher(badNew, this);
 }
 
 void NewNakedPtrCheck::check(const MatchFinder::MatchResult &Result) {
  
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXNewExpr>("expr");
-//  const auto *Parent = MatchedDecl->getParent();
-//  if (MatchedDecl->getName().startswith("awesome_"))
-//    return;
-  diag(MatchedDecl->getLocStart(), "new expr found");
+  const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXNewExpr>("badNew");
+
+  diag(MatchedDecl->getLocStart(), "new expression must be owned by unique_ptr");
 }
 
 } // namespace nodecpp

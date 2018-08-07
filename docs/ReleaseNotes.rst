@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-naked-ptr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-new-naked-ptr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-naked-ptr.html>`_ check
 
