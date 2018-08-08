@@ -19,7 +19,6 @@ namespace nodecpp {
 
 void ArrayTypeCheck::registerMatchers(MatchFinder *Finder) {
 
-
   Finder->addMatcher(typeLoc(loc(arrayType())).bind("type"), this);
 }
 

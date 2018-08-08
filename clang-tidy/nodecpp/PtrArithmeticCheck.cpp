@@ -20,8 +20,8 @@ namespace nodecpp {
 void PtrArithmeticCheck::registerMatchers(MatchFinder *Finder) {
 	//copied from ProBoundsPointerArithmeticCheck.cpp
 
-  if (!getLangOpts().CPlusPlus)
-    return;
+  //if (!getLangOpts().CPlusPlus)
+  //  return;
 
   // Flag all operators +, -, +=, -=, ++, -- that result in a pointer
   Finder->addMatcher(

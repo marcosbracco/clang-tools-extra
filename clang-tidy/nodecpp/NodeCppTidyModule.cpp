@@ -12,6 +12,7 @@
 #include "../ClangTidyModuleRegistry.h"
 #include "ArrayTypeCheck.h"
 #include "NakedPtrCheck.h"
+#include "NakedPtrFuncCheck.h"
 #include "NewArrayExprCheck.h"
 #include "NewExprCheck.h"
 #include "PtrArithmeticCheck.h"
@@ -29,6 +30,8 @@ public:
         "nodecpp-array-type");
     CheckFactories.registerCheck<NakedPtrCheck>(
         "nodecpp-naked-ptr");
+    CheckFactories.registerCheck<NakedPtrFuncCheck>(
+        "nodecpp-naked-ptr-func");
     CheckFactories.registerCheck<NewArrayExprCheck>(
         "nodecpp-new-array-expr");
     CheckFactories.registerCheck<NewExprCheck>(

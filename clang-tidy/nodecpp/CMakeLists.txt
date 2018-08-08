@@ -3,6 +3,7 @@ set(LLVM_LINK_COMPONENTS support)
 add_clang_library(clangTidyNodeCppModule
   ArrayTypeCheck.cpp
   NakedPtrCheck.cpp
+  NakedPtrFuncCheck.cpp
   NewArrayExprCheck.cpp
   NewExprCheck.cpp
   NodeCppTidyModule.cpp
