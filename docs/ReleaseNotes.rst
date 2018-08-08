@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-ptr' check was renamed to `nodecpp-naked-ptr-field
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-field.html>`_
+
 - New `nodecpp-naked-ptr-func
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-func.html>`_ check
 

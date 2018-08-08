@@ -1,4 +1,4 @@
-//===--- NakedPtrCheck.cpp - clang-tidy------------------------------------===//
+//===--- NakedPtrFieldCheck.cpp - clang-tidy-------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NakedPtrCheck.h"
+#include "NakedPtrFieldCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,14 +17,14 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NakedPtrCheck::registerMatchers(MatchFinder *Finder) {
+void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(
       fieldDecl(hasType(pointerType())).bind("decl"),
       this);
 }
 
-void NakedPtrCheck::check(const MatchFinder::MatchResult &Result) {
+void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *MatchedDecl = Result.Nodes.getNodeAs<FieldDecl>("decl");
 
