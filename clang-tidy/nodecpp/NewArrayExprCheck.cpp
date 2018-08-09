@@ -21,17 +21,11 @@ void NewArrayExprCheck::registerMatchers(MatchFinder *Finder) {
   if (!getLangOpts().CPlusPlus)
     return;
 
-  const auto arrNew = cxxNewExpr(isArray()).bind("expr");
-
-  Finder->addMatcher(arrNew, this);
+  //this rule was moved to NewExprCheck, remove
 }
 
 void NewArrayExprCheck::check(const MatchFinder::MatchResult &Result) {
 
-	const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXNewExpr>("expr");
-
-  diag(MatchedDecl->getLocStart(),
-       "do not use new array expression");
 }
 
 } // namespace nodecpp

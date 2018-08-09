@@ -22,29 +22,41 @@ void NewExprCheck::registerMatchers(MatchFinder *Finder) {
   if (!getLangOpts().CPlusPlus)
     return;
 
-  const auto OwnerDecl = cxxRecordDecl(hasName("::std::unique_ptr"));
-//    const auto FakeDecl = cxxRecordDecl(hasName("fake"));
-  const auto OwnerType = hasType(OwnerDecl);
-//  const auto IsNakedPtrType = hasType(pointerType());
+  const auto OwnerType =
+      hasType(cxxRecordDecl(hasName("::nodecpp::unique_ptr")));
 
   const auto OwnCtor = cxxConstructExpr(OwnerType);
   const auto OwnReset = cxxMemberCallExpr(has(
                      memberExpr(allOf(
 						 member(hasName("reset")), has(declRefExpr(OwnerType))))));
   
+  const auto ptrType =
+      hasType(pointerType(pointee(pointerType())));
+
   //new array is handled separatelly
   const auto badNew = cxxNewExpr(
-	  unless(anyOf(isArray(), hasParent(OwnCtor),
-		  hasParent(OwnReset)))).bind("expr");
+	  unless(anyOf(isArray(), ptrType, hasParent(OwnCtor),
+		  hasParent(OwnReset)))).bind("ownE");
+
+  const auto arrNew =
+      cxxNewExpr(isArray()).bind("arrE");
+
+  const auto ptrNew = cxxNewExpr(ptrType).bind("ptrE");
 
   Finder->addMatcher(badNew, this);
+  Finder->addMatcher(arrNew, this);
+  Finder->addMatcher(ptrNew, this);
 }
 
 void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
  
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXNewExpr>("expr");
-
-  diag(MatchedDecl->getLocStart(), "new expression must be owned by unique_ptr");
+  if (const auto *m = Result.Nodes.getNodeAs<CXXNewExpr>("ownE"))
+	  diag(m->getLocStart(), "new expression must be owned by nodecpp::unique_ptr");
+  else if (const auto *m = Result.Nodes.getNodeAs<CXXNewExpr>("arrE"))
+    diag(m->getLocStart(),
+         "do not use array new expression");
+  else if (const auto *m = Result.Nodes.getNodeAs<CXXNewExpr>("ptrE"))
+    diag(m->getLocStart(), "do not use new expression of pointers");
 }
 
 } // namespace nodecpp
