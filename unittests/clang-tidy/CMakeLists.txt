@@ -13,6 +13,7 @@ add_extra_unittest(ClangTidyTests
   GoogleModuleTest.cpp
   LLVMModuleTest.cpp
   NamespaceAliaserTest.cpp
+  NodeCppModuleTest.cpp
   ObjCModuleTest.cpp
   OverlappingReplacementsTest.cpp
   UsingInserterTest.cpp
@@ -29,6 +30,7 @@ target_link_libraries(ClangTidyTests
   clangTidyAndroidModule
   clangTidyGoogleModule
   clangTidyLLVMModule
+  clangTidyNodeCppModule
   clangTidyObjCModule
   clangTidyReadabilityModule
   clangTidyUtils
