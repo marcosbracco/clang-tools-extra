@@ -22,7 +22,7 @@ void StaticStorageCheck::registerMatchers(MatchFinder *Finder) {
 //  if (!getLangOpts().CPlusPlus)
 //    return;
  
-  Finder->addMatcher(varDecl(hasStaticStorageDuration()).bind("decl"), this);
+  Finder->addMatcher(varDecl(hasStaticStorageDuration(), unless(isConstexpr())).bind("decl"), this);
   Finder->addMatcher(varDecl(hasThreadStorageDuration()).bind("decl"), this);
 }
 

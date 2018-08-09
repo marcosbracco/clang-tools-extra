@@ -121,6 +121,7 @@ TEST(NodeCppModuleTest, PtrArithmeticCheck) {
 }
 
 TEST(NodeCppModuleTest, StaticStorageCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::StaticStorageCheck>("constexpr int good = 5;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("int bad;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("extern int bad;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("static int bad;"));
@@ -129,6 +130,8 @@ TEST(NodeCppModuleTest, StaticStorageCheck) {
   EXPECT_FALSE(
       checkCode<nodecpp::StaticStorageCheck>("int main() { static int bad; }"));
 
+  EXPECT_TRUE(
+      checkCode<nodecpp::StaticStorageCheck>("class Good { static constexpr int good = 5; };"));
   EXPECT_FALSE(
       checkCode<nodecpp::StaticStorageCheck>("class Bad { static int bad; };"));
 }
