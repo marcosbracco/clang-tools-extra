@@ -38,7 +38,34 @@ TEST(NodeCppModuleTest, ArrayTypeCheck) {
 }
 
 TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };\n"
+														"int main() { Bad b; }"));
+
+    std::string good = "namespace nodecpp {\n"
+                     "    template<class T>\n"
+                     "    class unique_ptr {\n"
+                     "      T* t;\n"
+                     "    };\n"
+                     "}\n";
+
+    std::string bad = "template<class T>\n"
+                      "class bad_ptr {\n"
+                      "      T* t;\n"
+                      "    };\n";
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(good +
+                                                      "int main() { nodecpp::unique_ptr<int> i; }"));
+
+    EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
+      good + "class Good { nodecpp::unique_ptr<int> i; };\n"
+		"int main() { Good g; }"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
+        bad + "int main() { bad_ptr<int> i; }"));
+
+    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
+      bad + "class Bad { bad_ptr<int> i; };\n"
+             "int main() { Bad b; }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFuncCheck) {
