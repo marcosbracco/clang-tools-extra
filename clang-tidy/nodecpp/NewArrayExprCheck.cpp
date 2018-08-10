@@ -18,8 +18,8 @@ namespace tidy {
 namespace nodecpp {
 
 void NewArrayExprCheck::registerMatchers(MatchFinder *Finder) {
-  if (!getLangOpts().CPlusPlus)
-    return;
+  //if (!getLangOpts().CPlusPlus)
+  //  return;
 
   //this rule was moved to NewExprCheck, remove
 }

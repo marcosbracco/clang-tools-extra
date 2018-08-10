@@ -47,6 +47,9 @@ TEST(NodeCppModuleTest, NakedPtrFuncCheck) {
   EXPECT_FALSE(
       checkCode<nodecpp::NakedPtrFuncCheck>(
       "int* bad() { return new int; }"));
+  EXPECT_FALSE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("class Bad { int i; int* bad() { return &i; } };"));
+
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>(
       "int*& bad(int* a) { static int* i = new int; return i; }"));
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>(

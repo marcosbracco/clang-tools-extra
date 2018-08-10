@@ -19,17 +19,28 @@ namespace nodecpp {
 
 void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
 
+  const auto NakedPtr = hasType(hasUnqualifiedDesugaredType(
+      anyOf(pointerType(), referenceType(pointee(pointerType())))));
+
   Finder->addMatcher(
-      fieldDecl(hasType(pointerType())).bind("decl"),
+      declaratorDecl(
+          hasType(recordDecl(hasDescendant(fieldDecl(NakedPtr).bind("field")),
+                             unless(hasName("::nodecpp::unique_ptr")),
+                             unless(hasName("::nodecpp::soft_ptr")))))
+          .bind("decl"),
       this);
 }
 
 void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<FieldDecl>("decl");
+  const auto *MatchedDecl = Result.Nodes.getNodeAs<Decl>("decl");
 
   diag(MatchedDecl->getLocation(),
-       "do not use naked pointer fields");
+       "do not use types with naked pointer fields");
+
+  const auto *MatchedField = Result.Nodes.getNodeAs<FieldDecl>("field");
+
+  diag(MatchedField->getLocation(), "field declared here", DiagnosticIDs::Note);
 }
 
 } // namespace nodecpp
