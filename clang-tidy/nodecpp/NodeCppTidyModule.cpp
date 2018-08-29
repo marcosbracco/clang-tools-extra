@@ -15,6 +15,7 @@
 #include "NakedPtrFuncCheck.h"
 #include "NewArrayExprCheck.h"
 #include "NewExprCheck.h"
+#include "NoCastCheck.h"
 #include "PtrArithmeticCheck.h"
 #include "StaticStorageCheck.h"
 
@@ -36,6 +37,8 @@ public:
         "nodecpp-new-array-expr");
     CheckFactories.registerCheck<NewExprCheck>(
         "nodecpp-new-expr");
+    CheckFactories.registerCheck<NoCastCheck>(
+        "nodecpp-no-cast");
     CheckFactories.registerCheck<PtrArithmeticCheck>(
         "nodecpp-ptr-arithmetic");
     CheckFactories.registerCheck<StaticStorageCheck>(

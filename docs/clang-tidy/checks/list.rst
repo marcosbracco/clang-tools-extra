@@ -176,10 +176,11 @@ Clang-Tidy Checks
    mpi-buffer-deref
    mpi-type-mismatch
    nodecpp-array-type
+   nodecpp-naked-ptr-field-func
    nodecpp-naked-ptr-field
-   nodecpp-naked-ptr-func
    nodecpp-new-array-expr
    nodecpp-new-expr
+   nodecpp-no-cast
    nodecpp-ptr-arithmetic
    nodecpp-static-storage
    objc-avoid-nserror-init

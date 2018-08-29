@@ -6,6 +6,7 @@ add_clang_library(clangTidyNodeCppModule
   NakedPtrFuncCheck.cpp
   NewArrayExprCheck.cpp
   NewExprCheck.cpp
+  NoCastCheck.cpp
   NodeCppTidyModule.cpp
   PtrArithmeticCheck.cpp
   StaticStorageCheck.cpp

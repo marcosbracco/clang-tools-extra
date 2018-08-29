@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-no-cast
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-no-cast.html>`_ check
+
+  FIXME: add release notes.
+
 - The 'nodecpp-naked-ptr' check was renamed to `nodecpp-naked-ptr-field
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-field.html>`_
 

@@ -5,6 +5,7 @@
 #include "nodecpp/NakedPtrFieldCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
 #include "nodecpp/NewExprCheck.h"
+#include "nodecpp/NoCastCheck.h"
 #include "nodecpp/PtrArithmeticCheck.h"
 #include "nodecpp/StaticStorageCheck.h"
 
@@ -127,6 +128,15 @@ TEST(NodeCppModuleTest, NewExprCheck) {
       good + "using namespace nodecpp; int main() { unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
       good + "int main() { nodecpp::unique_ptr<int> p; p.reset(new int); }"));
+}
+
+TEST(NodeCppModuleTest, NoCastCheck) {
+  EXPECT_FALSE(checkCode<nodecpp::NoCastCheck>(
+      "int main() { size_t i; auto r = reinterpret_cast<void*>(i); }"));
+  EXPECT_FALSE(checkCode<nodecpp::NoCastCheck>(
+      "int main() { size_t i; auto r = (void*)i; }"));
+  EXPECT_FALSE(checkCode<nodecpp::NoCastCheck>(
+      "int main() { void* p; auto r = static_cast<size_t*>(p); }"));
 }
 
 TEST(NodeCppModuleTest, PtrArithmeticCheck) {
