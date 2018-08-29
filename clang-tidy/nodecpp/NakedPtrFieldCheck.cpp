@@ -31,6 +31,26 @@ void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
+bool NakedPtrFieldCheck::moreCheck(const Type *type) {
+  if (type) {
+    auto c = type->getTypeClass();
+    if (c == Type::TypeClass::Builtin) {
+      return true;
+    } else if (c == Type::TypeClass::Record) {
+      auto rt = type->getAs<RecordType>();
+      auto itr = rt->getDecl()->fields();
+      for (auto it = itr.begin(); it != itr.end(); ++it) {
+        if (!moreCheck(it->getType().getTypePtrOrNull()))
+          return false;
+      }
+      return true;
+    } else {
+      type->dump();
+      return false;
+    }
+  }
+}
+
 void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *MatchedDecl = Result.Nodes.getNodeAs<Decl>("decl");
