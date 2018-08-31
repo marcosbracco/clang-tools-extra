@@ -11,6 +11,7 @@
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
 #include "ArrayTypeCheck.h"
+#include "NakedPtrAssignmentCheck.h"
 #include "NakedPtrFieldCheck.h"
 #include "NakedPtrFuncCheck.h"
 #include "NewArrayExprCheck.h"
@@ -29,6 +30,8 @@ public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
     CheckFactories.registerCheck<ArrayTypeCheck>(
         "nodecpp-array-type");
+    CheckFactories.registerCheck<NakedPtrAssignmentCheck>(
+        "nodecpp-naked-ptr-assignment");
     CheckFactories.registerCheck<NakedPtrFieldCheck>(
         "nodecpp-naked-ptr-field");
     CheckFactories.registerCheck<NakedPtrFuncCheck>(
