@@ -25,7 +25,9 @@ public:
   NakedPtrAssignmentCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
-  void declRefCheck(const DeclRefExpr *lhs, const DeclRefExpr *rhs);
+  static const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
+    void declRefCheck(ASTContext * context, const DeclRefExpr *lhs,
+                    const DeclRefExpr *rhs);
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
   };
 

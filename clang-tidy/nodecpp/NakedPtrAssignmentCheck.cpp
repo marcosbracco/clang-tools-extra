@@ -26,83 +26,100 @@ void NakedPtrAssignmentCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-void NakedPtrAssignmentCheck::declRefCheck(const DeclRefExpr *lhs,
+/* static */
+const Stmt *NakedPtrAssignmentCheck::getParentStmt(ASTContext *context,
+                                                   const Stmt *stmt) {
+
+  auto sList = context->getParents(*stmt);
+
+  auto sIt = sList.begin();
+
+  if (sIt != sList.end())
+    return sIt->get<Stmt>();
+  else
+    return nullptr;
+}
+
+void NakedPtrAssignmentCheck::declRefCheck(ASTContext *context,
+                                           const DeclRefExpr *lhs,
                                            const DeclRefExpr *rhs) {
+  const auto *lhsDecl = lhs->getDecl();
+  if (!lhsDecl) { // shouln't happend here
+    diag(lhs->getExprLoc(), "declaration not available");
+    return;
+  }
 
-    const auto *lhsDecl = lhs->getDecl();
-	if (!lhsDecl) { // sema error?
-      diag(lhs->getExprLoc(), "declaration not available",
-           DiagnosticIDs::Remark);
-      return;
-	} 
+  const auto *rhsDecl = rhs->getDecl();
+  if (!rhsDecl) { // shouln't happend here
+    diag(rhs->getExprLoc(), "declaration not available");
+    return;
+  }
 
-	const auto *rhsDecl = rhs->getDecl();
-    if (!rhsDecl) { // sema error?
-        diag(rhs->getExprLoc(), "declaration not available", DiagnosticIDs::Remark);
-        return;
-    }
+  auto lList = context->getParents(*lhsDecl);
+  auto rList = context->getParents(*rhsDecl);
 
-	const auto *declCtx = lhsDecl->getDeclContext();
-    if (declCtx != rhsDecl->getDeclContext()) {
-          diag(rhs->getExprLoc(), "do not extend naked pointer context (different DeclContext)",
-               DiagnosticIDs::Warning);
-      return;
-	}
+  auto lIt = lList.begin();
+  auto rIt = rList.begin();
 
-	auto its = declCtx->decls();
-        for (auto it = its.begin(); it != its.end(); ++it) {
-          if (*it == rhsDecl) {
-			// rhs found first, this is ok
+  if (lIt != lList.end() && rIt != rList.end()) {
+
+    auto lDeclStmt = lIt->get<DeclStmt>();
+    auto rDeclStmt = rIt->get<DeclStmt>();
+
+    if (lDeclStmt != nullptr && rDeclStmt != nullptr) {
+
+      auto rCompStmt = getParentStmt(context, rDeclStmt);
+      if (rCompStmt) {
+
+        auto lCompStmt = getParentStmt(context, lDeclStmt);
+
+        while (lCompStmt != nullptr) {
+
+          if (lCompStmt == rCompStmt) {
+//            diag(lhs->getExprLoc(), "this is Ok");
             return;
-          } else if (*it == lhsDecl) {
-			  //lhs found first, this is bad
-            diag(lhs->getExprLoc(),
-                 "do not extend naked pointer context",
-                 DiagnosticIDs::Warning);
-                          return;          
-		  }
-		}
-        diag(lhs->getExprLoc(), "do not extend naked pointer context (shouldn't reach here)",
-             DiagnosticIDs::Warning);
+          }
+
+          lCompStmt = getParentStmt(context, lCompStmt);
+        }
+      }
+    }
+  }
+
+  // we couldn't verify this is ok, assume the worst
+  diag(lhs->getExprLoc(), "do not extend naked pointer context");
 }
 
 void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
 
-	const auto *expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
-    const auto* lhs = dyn_cast<DeclRefExpr>(expr->getLHS());
-    if (lhs) {
-      const auto *lhsDecl = lhs->getDecl();
-          if (!lhsDecl) {// sema error?
-			  
-           return;
-          } 
-          else {
-            const auto *rhs = expr->getRHS()->IgnoreParenImpCasts();
-			if (isa<DeclRefExpr>(rhs)) {
+  const auto *expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
+  const auto *lhs = dyn_cast<DeclRefExpr>(expr->getLHS());
+  if (lhs) {
+    const auto *lhsDecl = lhs->getDecl();
+    if (!lhsDecl) { // sema error?
 
-			  declRefCheck(lhs, dyn_cast<DeclRefExpr>(rhs));
-              return;
+      return;
+    } else {
+      const auto *rhs = expr->getRHS()->IgnoreParenImpCasts();
+      if (isa<DeclRefExpr>(rhs)) {
 
-			}
-			else if (isa<UnaryOperator>(rhs)) {
-				const auto* rhsOp = dyn_cast<UnaryOperator>(rhs);
-				if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-                                  const auto *sub = rhsOp->getSubExpr()
-                                                        ->IgnoreParenImpCasts();
-                                  if (isa<DeclRefExpr>(sub)) {
-                                    declRefCheck(lhs,
-                                                 dyn_cast<DeclRefExpr>(sub));
-                                  
-									  return;
-								  }
-						  
-				}
+        declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(rhs));
+        return;
 
-			}
-		  }
-	}
-    diag(expr->getExprLoc(),
-             "naked pointer assignment not allowed");
+      } else if (isa<UnaryOperator>(rhs)) {
+        const auto *rhsOp = dyn_cast<UnaryOperator>(rhs);
+        if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
+          const auto *sub = rhsOp->getSubExpr()->IgnoreParenImpCasts();
+          if (isa<DeclRefExpr>(sub)) {
+            declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(sub));
+
+            return;
+          }
+        }
+      }
+    }
+  }
+  diag(expr->getExprLoc(), "naked pointer assignment not allowed");
 }
 
 } // namespace nodecpp
