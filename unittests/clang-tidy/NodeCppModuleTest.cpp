@@ -2,6 +2,7 @@
 #include "gtest/gtest.h"
 
 #include "nodecpp/ArrayTypeCheck.h"
+#include "nodecpp/NakedPtrAssignmentCheck.h"
 #include "nodecpp/NakedPtrFieldCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
 #include "nodecpp/NewExprCheck.h"
@@ -36,6 +37,27 @@ bool checkCode(const std::string &Code, const std::string& msg = std::string()) 
 
 TEST(NodeCppModuleTest, ArrayTypeCheck) {
   EXPECT_FALSE(checkCode<nodecpp::ArrayTypeCheck>("int main() { int i[1]; }"));
+}
+
+TEST(NodeCppModuleTest, NakedPtrAssignmentCheck) {
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int* p1; int* p2; p2 = p1; }"));
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int* p1; int* p2; p1 = p2; }"));
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int* p1; { int* p2; p2 = p1; } }"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int* p1; { int* p2; p1 = p2; } }"));
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int p1; { int* p2; p2 = &p1; } }"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
+      "int main() { int* p1; { int p2; p1 = &p2; } }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
