@@ -4,6 +4,7 @@
 #include "nodecpp/ArrayTypeCheck.h"
 #include "nodecpp/NakedPtrAssignmentCheck.h"
 #include "nodecpp/NakedPtrFieldCheck.h"
+#include "nodecpp/NakedPtrFromReturnCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
 #include "nodecpp/NewExprCheck.h"
 #include "nodecpp/NoCastCheck.h"
@@ -91,21 +92,69 @@ TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
              "int main() { Bad b; }"));
 }
 
-TEST(NodeCppModuleTest, NakedPtrFuncCheck) {
-  EXPECT_TRUE(
-      checkCode<nodecpp::NakedPtrFuncCheck>("int good(int* a) { return *a; }"));
-  EXPECT_FALSE(
-      checkCode<nodecpp::NakedPtrFuncCheck>(
-      "int* bad() { return new int; }"));
-  EXPECT_FALSE(
-      checkCode<nodecpp::NakedPtrFuncCheck>("class Bad { int i; int* bad() { return &i; } };"));
+TEST(NodeCppModuleTest, NakedPtrFromReturnCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; func(p1); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; func(&i); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; int* p2 = func(p1); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; int* p2 = func(&i); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; p1 = func(p1); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+	  "int main() {int* p1; int i; p1 = func(&i); }"));
 
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>(
-      "int*& bad(int* a) { static int* i = new int; return i; }"));
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>(
-      "void bad(int* a, int** b) { b = &a; }"));
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>(
-      "void bad(int* a, int*& b) { b = a; }"));
+    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*);"
+      "int main() {int* p1; { int i; p1 = func(&i); } }"));
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*, int*);"
+      "int main() {int* p1; int i; p1 = func(p1, &i); }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*, int*);"
+      "int main() {int* p1; {int i; p1 = func(p1, &i); } }"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int*, int*);"
+      "int main() {int* p1; {int i; p1 = func(&i, p1); } }"));
+
+  // this is expected to be valid with better check logic
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+      "int* func(int, int*);"
+      "int main() {int* p1; {int i; p1 = func(i, p1); } }"));
+}
+
+TEST(NodeCppModuleTest, NakedPtrFuncCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("void good(int a);"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("void good(int& a);"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("void good(int* a);"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("int good();"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("int& good();"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFuncCheck>("int* good();"));
+  EXPECT_TRUE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("struct Good { int good(); };"));
+  EXPECT_TRUE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("struct Good { int& good(); };"));
+  EXPECT_TRUE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("struct Good { int* good(); };"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>("int*& bad();"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>("int** bad();"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>("void bad(int** a);"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFuncCheck>("void bad(int*& a);"));
+  EXPECT_FALSE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("void bad(int* a, int** b);"));
+  EXPECT_FALSE(
+      checkCode<nodecpp::NakedPtrFuncCheck>("void bad(int* a, int*& b);"));
 }
 
 
