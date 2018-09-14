@@ -87,7 +87,7 @@ void NakedPtrAssignmentCheck::declRefCheck(ASTContext *context,
   }
 
   // we couldn't verify this is ok, assume the worst
-  diag(lhs->getExprLoc(), "do not extend naked pointer context");
+  diag(rhs->getExprLoc(), "do not extend naked pointer context");
 }
 
 void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
@@ -97,7 +97,7 @@ void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
   if (lhs) {
     const auto *lhsDecl = lhs->getDecl();
     if (!lhsDecl) { // sema error?
-
+	  diag(lhs->getExprLoc(), "declaration not available");
       return;
     } else {
       const auto *rhs = expr->getRHS()->IgnoreParenImpCasts();
@@ -116,7 +116,10 @@ void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
             return;
           }
         }
-      }
+      } else if (isa<CallExpr>(rhs)) {
+		//ok, this case is handled by nodecpp-naked-ptr-from-return
+        return;
+	  }
     }
   }
   diag(expr->getExprLoc(), "naked pointer assignment not allowed");

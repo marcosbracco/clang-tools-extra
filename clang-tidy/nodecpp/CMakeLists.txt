@@ -4,8 +4,8 @@ add_clang_library(clangTidyNodeCppModule
   ArrayTypeCheck.cpp
   NakedPtrAssignmentCheck.cpp
   NakedPtrFieldCheck.cpp
+  NakedPtrFromReturnCheck.cpp
   NakedPtrFuncCheck.cpp
-  NewArrayExprCheck.cpp
   NewExprCheck.cpp
   NoCastCheck.cpp
   NodeCppTidyModule.cpp

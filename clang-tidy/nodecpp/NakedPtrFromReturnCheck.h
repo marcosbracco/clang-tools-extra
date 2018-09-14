@@ -1,4 +1,4 @@
-//===--- NewArrayExprCheck.h - clang-tidy------------------------*- C++ -*-===//
+//===--- NakedPtrFromReturnCheck.h - clang-tidy------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,12 +19,24 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-new-array-expr.html
-class NewArrayExprCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-return.html
+class NakedPtrFromReturnCheck : public ClangTidyCheck {
 public:
-  NewArrayExprCheck(StringRef Name, ClangTidyContext *Context)
+  NakedPtrFromReturnCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
+  static const BinaryOperator *getParentBinOp(ASTContext *context,
+                                              const Expr *expr);
+  static bool isParentCompStmt(ASTContext *context, const Expr *expr);
+  static bool isParentVarDecl(ASTContext *context,
+                                                       const Expr *expr);
+
+  static
+  const Stmt *getParentStmt(ASTContext *context,
+                                                     const Stmt *stmt);
+  bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
+                    const DeclRefExpr *rhs);
+
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
 
