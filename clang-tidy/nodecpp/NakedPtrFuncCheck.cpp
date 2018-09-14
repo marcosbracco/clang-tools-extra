@@ -19,30 +19,61 @@ namespace nodecpp {
 
 void NakedPtrFuncCheck::registerMatchers(MatchFinder *Finder) {
 
-//  Finder->addMatcher(functionDecl(returns(asString("class Pepe"))).bind("decl"), this);
-  //Will match implicit operator new and delete, ignore implicits
-  Finder->addMatcher(functionDecl(allOf(unless(isImplicit()), returns(pointerType()))).bind("decl"),
+	// Will match implicit operator new and delete, ignore implicits
+  // just pointer type case is handled by naked-ptr-from-return
+  Finder->addMatcher(functionDecl(unless(isImplicit()),
+                                  returns(pointerType(pointee(pointerType()))))
+                         .bind("func"),
                      this);
-  Finder->addMatcher(functionDecl(returns(referenceType(pointee(pointerType())))).bind("decl"), this);
-
   Finder->addMatcher(
-      functionDecl(hasAnyParameter(hasType(referenceType(pointee(pointerType())))))
-          .bind("decl"),
+      functionDecl(unless(isImplicit()),
+                   returns(referenceType(pointee(pointerType()))))
+          .bind("func"),
       this);
-  Finder->addMatcher(functionDecl(hasAnyParameter(hasType(
+
+  Finder->addMatcher(functionDecl(unless(isImplicit()),
+                                  hasAnyParameter(hasType(
+                                      referenceType(pointee(pointerType())))))
+                         .bind("func"),
+                     this);
+  Finder->addMatcher(functionDecl(unless(isImplicit()),
+                                  hasAnyParameter(hasType(
                                       pointerType(pointee(pointerType())))))
-                         .bind("decl"),
+                         .bind("func"),
                      this);
 }
 
 void NakedPtrFuncCheck::check(const MatchFinder::MatchResult &Result) {
 
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<FunctionDecl>("decl");
-  //This matchers matches implicit operator new and delete without location, ignore them
-  if (MatchedDecl->getLocation().isValid())
-    diag(MatchedDecl->getLocation(), "do not extend lifetime of pointers");
-  else
-    MatchedDecl->dumpColor();
+  const auto *func = Result.Nodes.getNodeAs<FunctionDecl>("func");
+  // This matchers matches implicit operator new and delete without location,
+  // ignore them
+  if (!func->getLocation().isValid()) {
+    func->dumpColor();
+    return;
+  }
+  auto t = func->getReturnType();
+  if (t->isReferenceType() || t->isPointerType()) {
+    auto pt = t->getPointeeType();
+    if (pt->isPointerType()) {
+      diag(func->getLocation(), "return type not allowed");
+      return;
+    }
+  }
+
+  auto args = func->parameters();
+  for (auto it = args.begin(); it != args.end(); ++it) {
+    auto t = (*it)->getType();
+    if (t->isPointerType() || t->isReferenceType()) {
+      auto pt = t->getPointeeType();
+      if (pt->isPointerType()) {
+        diag((*it)->getLocation(), "parameter type not allowed");
+        return;
+	  }
+	}
+  }
+  diag(func->getLocation(), "there is an unknown problem with the signature of this function");
+  func->dumpColor();
 }
 
 } // namespace nodecpp
