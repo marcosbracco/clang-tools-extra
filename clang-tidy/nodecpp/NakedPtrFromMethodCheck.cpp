@@ -1,4 +1,4 @@
-//===--- NakedPtrFromReturnCheck.cpp - clang-tidy--------------------------===//
+//===--- NakedPtrFromMethodCheck.cpp - clang-tidy--------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NakedPtrFromReturnCheck.h"
+#include "NakedPtrFromMethodCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,18 +17,17 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NakedPtrFromReturnCheck::registerMatchers(MatchFinder *Finder) {
+void NakedPtrFromMethodCheck::registerMatchers(MatchFinder *Finder) {
   
+  if (!getLangOpts().CPlusPlus)
+    return;
 
-
-  Finder->addMatcher(callExpr(hasType(pointerType())).bind("call"), this);
+  Finder->addMatcher(cxxMemberCallExpr(hasType(pointerType())).bind("call"), this);
 }
 
 /* static */
 const BinaryOperator *
-NakedPtrFromReturnCheck::getParentBinOp(ASTContext *context,
-                                                   const Expr *expr)
-{
+NakedPtrFromMethodCheck::getParentBinOp(ASTContext *context, const Expr *expr) {
 
   auto sList = context->getParents(*expr);
 
@@ -41,8 +40,8 @@ NakedPtrFromReturnCheck::getParentBinOp(ASTContext *context,
 }
 
 /* static */
-bool NakedPtrFromReturnCheck::isParentCompStmt(ASTContext *context,
-                                                   const Expr *expr) {
+bool NakedPtrFromMethodCheck::isParentCompStmt(ASTContext *context,
+                                               const Expr *expr) {
 
   auto sList = context->getParents(*expr);
 
@@ -55,8 +54,8 @@ bool NakedPtrFromReturnCheck::isParentCompStmt(ASTContext *context,
 }
 
 /* static */
-bool NakedPtrFromReturnCheck::isParentVarDecl(ASTContext *context,
-                                           const Expr *expr) {
+bool NakedPtrFromMethodCheck::isParentVarDecl(ASTContext *context,
+                                              const Expr *expr) {
 
   auto sList = context->getParents(*expr);
 
@@ -68,7 +67,7 @@ bool NakedPtrFromReturnCheck::isParentVarDecl(ASTContext *context,
     return false;
 }
 /* static */
-const Stmt *NakedPtrFromReturnCheck::getParentStmt(ASTContext *context,
+const Stmt *NakedPtrFromMethodCheck::getParentStmt(ASTContext *context,
                                                    const Stmt *stmt) {
 
   auto sList = context->getParents(*stmt);
@@ -81,7 +80,7 @@ const Stmt *NakedPtrFromReturnCheck::getParentStmt(ASTContext *context,
     return nullptr;
 }
 
-bool NakedPtrFromReturnCheck::declRefCheck(ASTContext *context,
+bool NakedPtrFromMethodCheck::declRefCheck(ASTContext *context,
                                            const DeclRefExpr *lhs,
                                            const DeclRefExpr *rhs) {
   const auto *lhsDecl = lhs->getDecl();
@@ -132,13 +131,13 @@ bool NakedPtrFromReturnCheck::declRefCheck(ASTContext *context,
   return false;
 }
 
+void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
+  const auto *m = Result.Nodes.getNodeAs<CXXMemberCallExpr>("call");
 
-void NakedPtrFromReturnCheck::check(const MatchFinder::MatchResult &Result) {
-  const auto *m = Result.Nodes.getNodeAs<CallExpr>("call");
+  //  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
 
-//  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
-
-  if (isParentCompStmt(Result.Context, m) || isParentVarDecl(Result.Context, m)) {
+  if (isParentCompStmt(Result.Context, m) ||
+      isParentVarDecl(Result.Context, m)) {
     // this is ok
     return;
 
@@ -152,28 +151,46 @@ void NakedPtrFromReturnCheck::check(const MatchFinder::MatchResult &Result) {
           diag(lhs->getExprLoc(), "declaration not available");
           return;
         } else {
-          bool ok = true;
+          // first check instance
+          const auto *callee = dyn_cast<MemberExpr>(m->getCallee());
+          if (!callee) {
+            diag(lhs->getExprLoc(), "member expr not available");
+            return;
+          }
+          const auto *base = callee->getBase()->IgnoreParenImpCasts();
+          if (isa<DeclRefExpr>(base)) {
+            if (!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(base)))
+              return;
+
+          } else {
+            diag(base->getExprLoc(), "Couln't verify base");
+            return;
+          }
+
+          // then check arguments
+
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
             if (isa<DeclRefExpr>(rhs)) {
-
-              ok = ok && declRefCheck(Result.Context, lhs,
-                                      dyn_cast<DeclRefExpr>(rhs));
+              if (!declRefCheck(Result.Context, lhs,
+                                dyn_cast<DeclRefExpr>(rhs)))
+                return;
 
             } else if (isa<UnaryOperator>(rhs)) {
               const auto *rhsOp = dyn_cast<UnaryOperator>(rhs);
               if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
                 const auto *sub = rhsOp->getSubExpr()->IgnoreParenImpCasts();
                 if (isa<DeclRefExpr>(sub)) {
-                  ok = ok && declRefCheck(Result.Context, lhs,
-                                          dyn_cast<DeclRefExpr>(sub));
+                  if (!declRefCheck(Result.Context, lhs,
+                                    dyn_cast<DeclRefExpr>(sub)))
+                    return;
                 }
               }
             } else {
-              ok = false;
               diag(rhs->getExprLoc(), "Couln't verify argument");
-			}
+              return;
+            }
           }
           return;
         }
