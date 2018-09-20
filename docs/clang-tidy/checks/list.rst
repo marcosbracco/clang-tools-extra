@@ -179,8 +179,8 @@ Clang-Tidy Checks
    nodecpp-naked-ptr-assignment
    nodecpp-naked-ptr-field-func
    nodecpp-naked-ptr-field
+   nodecpp-naked-ptr-from-function
    nodecpp-naked-ptr-from-method
-   nodecpp-naked-ptr-from-return
    nodecpp-new-expr
    nodecpp-no-cast
    nodecpp-ptr-arithmetic

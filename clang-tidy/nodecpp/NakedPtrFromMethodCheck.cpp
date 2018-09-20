@@ -172,7 +172,10 @@ void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
-            if (isa<DeclRefExpr>(rhs)) {
+			if (isa <CXXNullPtrLiteralExpr>(rhs)) {
+				;//nothing to do
+			}
+            else if (isa<DeclRefExpr>(rhs)) {
               if (!declRefCheck(Result.Context, lhs,
                                 dyn_cast<DeclRefExpr>(rhs)))
                 return;

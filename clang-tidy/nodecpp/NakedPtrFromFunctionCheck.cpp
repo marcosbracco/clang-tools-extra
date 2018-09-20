@@ -1,4 +1,4 @@
-//===--- NakedPtrFromReturnCheck.cpp - clang-tidy--------------------------===//
+//===--- NakedPtrFromFunctionCheck.cpp - clang-tidy------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NakedPtrFromReturnCheck.h"
+#include "NakedPtrFromFunctionCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,7 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NakedPtrFromReturnCheck::registerMatchers(MatchFinder *Finder) {
+void NakedPtrFromFunctionCheck::registerMatchers(MatchFinder *Finder) {
   
 
 
@@ -26,7 +26,7 @@ void NakedPtrFromReturnCheck::registerMatchers(MatchFinder *Finder) {
 
 /* static */
 const BinaryOperator *
-NakedPtrFromReturnCheck::getParentBinOp(ASTContext *context,
+NakedPtrFromFunctionCheck::getParentBinOp(ASTContext *context,
                                                    const Expr *expr)
 {
 
@@ -41,7 +41,7 @@ NakedPtrFromReturnCheck::getParentBinOp(ASTContext *context,
 }
 
 /* static */
-bool NakedPtrFromReturnCheck::isParentCompStmt(ASTContext *context,
+bool NakedPtrFromFunctionCheck::isParentCompStmt(ASTContext *context,
                                                    const Expr *expr) {
 
   auto sList = context->getParents(*expr);
@@ -55,7 +55,7 @@ bool NakedPtrFromReturnCheck::isParentCompStmt(ASTContext *context,
 }
 
 /* static */
-bool NakedPtrFromReturnCheck::isParentVarDecl(ASTContext *context,
+bool NakedPtrFromFunctionCheck::isParentVarDecl(ASTContext *context,
                                            const Expr *expr) {
 
   auto sList = context->getParents(*expr);
@@ -68,7 +68,7 @@ bool NakedPtrFromReturnCheck::isParentVarDecl(ASTContext *context,
     return false;
 }
 /* static */
-const Stmt *NakedPtrFromReturnCheck::getParentStmt(ASTContext *context,
+const Stmt *NakedPtrFromFunctionCheck::getParentStmt(ASTContext *context,
                                                    const Stmt *stmt) {
 
   auto sList = context->getParents(*stmt);
@@ -81,19 +81,23 @@ const Stmt *NakedPtrFromReturnCheck::getParentStmt(ASTContext *context,
     return nullptr;
 }
 
-bool NakedPtrFromReturnCheck::declRefCheck(ASTContext *context,
+bool NakedPtrFromFunctionCheck::declRefCheck(ASTContext *context,
                                            const DeclRefExpr *lhs,
                                            const DeclRefExpr *rhs) {
   const auto *lhsDecl = lhs->getDecl();
   if (!lhsDecl) { // shouln't happend here
-    diag(lhs->getExprLoc(), "declaration not available");
+    diag(lhs->getExprLoc(), "declaration not available", DiagnosticIDs::Note);
     return false;
   }
 
   const auto *rhsDecl = rhs->getDecl();
   if (!rhsDecl) { // shouln't happend here
-    diag(rhs->getExprLoc(), "declaration not available");
+    diag(rhs->getExprLoc(), "declaration not available", DiagnosticIDs::Note);
     return false;
+  }
+
+  if (isa<ParmVarDecl>(rhsDecl)) {
+    return true;
   }
 
   auto lList = context->getParents(*lhsDecl);
@@ -133,7 +137,7 @@ bool NakedPtrFromReturnCheck::declRefCheck(ASTContext *context,
 }
 
 
-void NakedPtrFromReturnCheck::check(const MatchFinder::MatchResult &Result) {
+void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *m = Result.Nodes.getNodeAs<CallExpr>("call");
 
 //  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
@@ -156,7 +160,10 @@ void NakedPtrFromReturnCheck::check(const MatchFinder::MatchResult &Result) {
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
-            if (isa<DeclRefExpr>(rhs)) {
+            if (isa<CXXNullPtrLiteralExpr>(rhs)) {
+              ; // nothing to do
+            }
+            else if (isa<DeclRefExpr>(rhs)) {
 
               ok = ok && declRefCheck(Result.Context, lhs,
                                       dyn_cast<DeclRefExpr>(rhs));

@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-ptr-from-return' check was renamed to `nodecpp-naked-ptr-from-function
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-function.html>`_
+
 - New `nodecpp-naked-ptr-from-method
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-method.html>`_ check
 

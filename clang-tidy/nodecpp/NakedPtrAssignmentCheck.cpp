@@ -117,7 +117,7 @@ void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
           }
         }
       } else if (isa<CallExpr>(rhs)) {
-		//ok, this case is handled by nodecpp-naked-ptr-from-return
+		//ok, this case is handled by nodecpp-naked-ptr-from-function
         return;
 	  }
     }

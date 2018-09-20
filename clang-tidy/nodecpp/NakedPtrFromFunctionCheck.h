@@ -1,4 +1,4 @@
-//===--- NakedPtrFromReturnCheck.h - clang-tidy------------------------*- C++ -*-===//
+//===--- NakedPtrFromFunctionCheck.h - clang-tidy------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-return.html
-class NakedPtrFromReturnCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-function.html
+class NakedPtrFromFunctionCheck : public ClangTidyCheck {
 public:
-  NakedPtrFromReturnCheck(StringRef Name, ClangTidyContext *Context)
+  NakedPtrFromFunctionCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   static const BinaryOperator *getParentBinOp(ASTContext *context,

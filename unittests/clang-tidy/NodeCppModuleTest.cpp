@@ -4,7 +4,8 @@
 #include "nodecpp/ArrayTypeCheck.h"
 #include "nodecpp/NakedPtrAssignmentCheck.h"
 #include "nodecpp/NakedPtrFieldCheck.h"
-#include "nodecpp/NakedPtrFromReturnCheck.h"
+#include "nodecpp/NakedPtrFromFunctionCheck.h"
+#include "nodecpp/NakedPtrFromMethodCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
 #include "nodecpp/NewExprCheck.h"
 #include "nodecpp/NoCastCheck.h"
@@ -92,52 +93,87 @@ TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
              "int main() { Bad b; }"));
 }
 
-TEST(NodeCppModuleTest, NakedPtrFromReturnCheck) {
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int* p1; func(p1); }"));
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int i; func(&i); }"));
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int* p1; int* p2 = func(p1); }"));
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int i; int* p2 = func(&i); }"));
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int* p1; int i; p1 = func(p1); }"));
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
 	  "int main() { int* p1; int i; p1 = func(&i); }"));
-
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int*);"
+      "int main() { int* p1; int i; p1 = func(nullptr); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int*);"
+      "void other(int* arg) { int* p1; { p1 = func(arg); } }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "int main() { int* p1; int* p2 = func(func(p1)); }"));
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "int main() { int* p1; int i = *(func(p1)); }"));
 
-    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "int main() { int* p1; { int i; p1 = func(&i); } }"));
 
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*, int*);"
       "int main() { int* p1; int i; p1 = func(p1, &i); }"));
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*, int*);"
       "int main() { int* p1; {int i; p1 = func(p1, &i); } }"));
 
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*, int*);"
       "int main() { int* p1; {int i; p1 = func(&i, p1); } }"));
 
   // this is expected to be valid with better check logic
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromReturnCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int, int*);"
       "int main() { int* p1; {int i; p1 = func(i, p1); } }"));
+}
+
+
+TEST(NodeCppModuleTest, NakedPtrFromMethodCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { int* get(); };"
+      "int main() { Some s; s.get(); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { int* get(); };"
+      "int main() { Some s; int* p2 = s.get(); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { int* get(); };"
+      "int main() { Some s; int* p1; p1 = s.get(); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { int* get(); };"
+      "int main() { Some s; Some* sp = &s; int* p1; p1 = sp->get(); }"));
+
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { int* get(); };"
+      "int main() { int* p1; { Some s; p1 = s.get(); } }"));
+
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { Some* get(Some*); };"
+      "int main() { Some* sp; Some s; sp = s.get(sp); }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { Some* get(Some*); };"
+      "int main() { Some* sp; { Some s; sp = s.get(sp); } }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { Some* get(Some*); };"
+      "int main() { Some* sp; Some s; { Some* sp2; sp = s.get(sp2); } }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFuncCheck) {

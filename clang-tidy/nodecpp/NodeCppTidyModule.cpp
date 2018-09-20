@@ -13,8 +13,8 @@
 #include "ArrayTypeCheck.h"
 #include "NakedPtrAssignmentCheck.h"
 #include "NakedPtrFieldCheck.h"
+#include "NakedPtrFromFunctionCheck.h"
 #include "NakedPtrFromMethodCheck.h"
-#include "NakedPtrFromReturnCheck.h"
 #include "NakedPtrFuncCheck.h"
 #include "NewExprCheck.h"
 #include "NoCastCheck.h"
@@ -35,10 +35,10 @@ public:
         "nodecpp-naked-ptr-assignment");
     CheckFactories.registerCheck<NakedPtrFieldCheck>(
         "nodecpp-naked-ptr-field");
+    CheckFactories.registerCheck<NakedPtrFromFunctionCheck>(
+        "nodecpp-naked-ptr-from-function");
     CheckFactories.registerCheck<NakedPtrFromMethodCheck>(
         "nodecpp-naked-ptr-from-method");
-    CheckFactories.registerCheck<NakedPtrFromReturnCheck>(
-        "nodecpp-naked-ptr-from-return");
     CheckFactories.registerCheck<NakedPtrFuncCheck>(
         "nodecpp-naked-ptr-func");
     CheckFactories.registerCheck<NewExprCheck>(
