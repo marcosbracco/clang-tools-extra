@@ -160,7 +160,7 @@ void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
-            if (isa<CXXNullPtrLiteralExpr>(rhs)) {
+            if (isa<CXXNullPtrLiteralExpr>(rhs) || isa<CXXDefaultArgExpr>(rhs)) {
               ; // nothing to do
             }
             else if (isa<DeclRefExpr>(rhs)) {

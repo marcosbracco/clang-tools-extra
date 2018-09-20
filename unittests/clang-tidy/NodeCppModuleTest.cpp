@@ -116,6 +116,9 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
       "int* func(int*);"
       "int main() { int* p1; int i; p1 = func(nullptr); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int* p = nullptr);"
+      "int main() { int* p1; int i; p1 = func(); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "void other(int* arg) { int* p1; { p1 = func(arg); } }"));
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
@@ -168,6 +171,12 @@ TEST(NodeCppModuleTest, NakedPtrFromMethodCheck) {
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
       "struct Some { Some* get(Some*); };"
       "int main() { Some* sp; Some s; sp = s.get(sp); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { Some* get(Some*); };"
+      "void other(Some* arg) { Some* sp; Some s; sp = s.get(arg); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
+      "struct Some { Some* get(Some* sp = nullptr); };"
+      "int main() { Some* sp; Some s; sp = s.get(); }"));
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
       "struct Some { Some* get(Some*); };"
       "int main() { Some* sp; { Some s; sp = s.get(sp); } }"));

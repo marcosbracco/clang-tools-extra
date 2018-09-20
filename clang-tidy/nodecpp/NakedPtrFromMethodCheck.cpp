@@ -95,6 +95,10 @@ bool NakedPtrFromMethodCheck::declRefCheck(ASTContext *context,
     return false;
   }
 
+  if (isa<ParmVarDecl>(rhsDecl)) {
+    return true;
+  }
+
   auto lList = context->getParents(*lhsDecl);
   auto rList = context->getParents(*rhsDecl);
 
@@ -172,7 +176,8 @@ void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
-			if (isa <CXXNullPtrLiteralExpr>(rhs)) {
+            if (isa<CXXNullPtrLiteralExpr>(rhs) ||
+                isa<CXXDefaultArgExpr>(rhs)) {
 				;//nothing to do
 			}
             else if (isa<DeclRefExpr>(rhs)) {
