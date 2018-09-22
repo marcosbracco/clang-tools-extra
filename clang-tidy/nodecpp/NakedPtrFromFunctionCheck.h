@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NAKEDPTRFROMFUNCTIONCHECK_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NAKEDPTRFROMFUNCTIONCHECK_H
 
 #include "../ClangTidy.h"
 
@@ -25,17 +25,6 @@ public:
   NakedPtrFromFunctionCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
-  static const BinaryOperator *getParentBinOp(ASTContext *context,
-                                              const Expr *expr);
-  static bool isParentCompStmt(ASTContext *context, const Expr *expr);
-  static bool isParentVarDecl(ASTContext *context,
-                                                       const Expr *expr);
-
-  static
-  const Stmt *getParentStmt(ASTContext *context,
-                                                     const Stmt *stmt);
-  bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
-                    const DeclRefExpr *rhs);
 
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
@@ -44,4 +33,4 @@ public:
 } // namespace tidy
 } // namespace clang
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NEWARRAYEXPRCHECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_NAKEDPTRFROMFUNCTIONCHECK_H

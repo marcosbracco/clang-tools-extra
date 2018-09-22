@@ -1,6 +1,7 @@
 set(LLVM_LINK_COMPONENTS support)
 
 add_clang_library(clangTidyNodeCppModule
+  NakedPtrHelper.cpp
   ArrayTypeCheck.cpp
   NakedPtrAssignmentCheck.cpp
   NakedPtrFieldCheck.cpp
