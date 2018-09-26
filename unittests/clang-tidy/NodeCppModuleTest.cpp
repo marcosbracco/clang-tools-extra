@@ -114,6 +114,9 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
 	  "int main() { int* p1; int i; p1 = func(&i); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
+      "int main() { int* p1; { p1 = func(p1); } }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int*);"
       "int main() { int* p1; int i; p1 = func(nullptr); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int* p = nullptr);"
@@ -143,8 +146,7 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
       "int* func(int*, int*);"
       "int main() { int* p1; {int i; p1 = func(&i, p1); } }"));
 
-  // this is expected to be valid with better check logic
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int, int*);"
       "int main() { int* p1; {int i; p1 = func(i, p1); } }"));
 }
