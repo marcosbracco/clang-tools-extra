@@ -62,7 +62,7 @@ void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
 	  }
     }
   }
-  diag(lhs->getExprLoc(), "couldn't verify naked pointer safety");
+  diag(expr->getExprLoc(), "couldn't verify naked pointer safety");
 }
 
 } // namespace nodecpp
