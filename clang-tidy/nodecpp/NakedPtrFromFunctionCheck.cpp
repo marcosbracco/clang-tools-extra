@@ -44,12 +44,17 @@ void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
           diag(lhs->getExprLoc(), "declaration not available");
           return;
         } else {
+          auto mtype = m->getType().getCanonicalType();
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
 
-			if (!checkArgument(Result.Context, lhs, *it)) {
-              diag((*it)->getExprLoc(), "couldn't verify naked pointer safety of call argument");
-              return;
+            if (canArgumentGenerateOutput(
+                    mtype,
+                    (*it)->getType().getCanonicalType())) {
+            if (!checkArgument(Result.Context, lhs, *it)) {
+				  diag((*it)->getExprLoc(), "couldn't verify naked pointer safety of call argument");
+				  return;
+				}
 			}
           }
           return;

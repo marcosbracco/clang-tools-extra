@@ -145,6 +145,40 @@ bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
 
   return false;
 }
+
+bool canArgumentGenerateOutput(QualType out, QualType arg) {
+  out.dump();
+  arg.dump();
+
+  bool outIsBuiltIn = false;
+  const Type *t = out.getTypePtrOrNull();
+  if (t && t->isPointerType()) {
+    const Type *t2 = t->getPointeeType().getTypePtrOrNull();
+    if (t2 && t2->isBuiltinType()) {
+      outIsBuiltIn = true;
+    }
+  } else {
+    return false;
+  }
+
+  const Type *targ = arg.getTypePtrOrNull();
+  if (targ && (targ->isPointerType() || targ->isReferenceType())) {
+    const Type *t2arg = targ->getPointeeType().getTypePtrOrNull();
+    if (t2arg && t2arg->isBuiltinType()) {
+      if (!outIsBuiltIn) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  } else {
+    return false;
+  }
+}
+
+
 /*
 bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *m = Result.Nodes.getNodeAs<CallExpr>("call");

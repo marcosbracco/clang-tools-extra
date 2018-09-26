@@ -32,6 +32,7 @@ bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
 bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
                   const DeclRefExpr *rhs);
 
+bool canArgumentGenerateOutput(QualType out, QualType arg);
 } // namespace nodecpp
 } // namespace tidy
 } // namespace clang
