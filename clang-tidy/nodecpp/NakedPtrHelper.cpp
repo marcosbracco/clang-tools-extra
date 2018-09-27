@@ -147,8 +147,10 @@ bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
 }
 
 bool canArgumentGenerateOutput(QualType out, QualType arg) {
-  out.dump();
-  arg.dump();
+  //out.dump();
+  //arg.dump();
+  assert(out.isCanonical());
+  assert(arg.isCanonical());
 
   bool outIsBuiltIn = false;
   const Type *t = out.getTypePtrOrNull();

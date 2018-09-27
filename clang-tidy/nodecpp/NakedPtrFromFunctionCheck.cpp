@@ -44,20 +44,34 @@ void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
           diag(lhs->getExprLoc(), "declaration not available");
           return;
         } else {
-          auto mtype = m->getType().getCanonicalType();
+          // then check arguments
+          const auto *decl = m->getDirectCallee();
+          if (!decl) {
+            diag(m->getExprLoc(), "callee declaration not available");
+            return;
+		  }
+          auto params = decl->parameters();
+          auto ret = decl->getReturnType().getCanonicalType();
           auto args = m->arguments();
-          for (auto it = args.begin(); it != args.end(); ++it) {
 
-            if (canArgumentGenerateOutput(
-                    mtype,
-                    (*it)->getType().getCanonicalType())) {
-            if (!checkArgument(Result.Context, lhs, *it)) {
-				  diag((*it)->getExprLoc(), "couldn't verify naked pointer safety of call argument");
-				  return;
-				}
-			}
+          auto it = args.begin();
+          auto jt = params.begin();
+          while (it != args.end() && jt != params.end()) {
+            auto arg = (*jt)->getType().getCanonicalType();
+            if (canArgumentGenerateOutput(ret, arg)) {
+              if (!checkArgument(Result.Context, lhs, *it)) {
+                diag((*it)->getExprLoc(),
+                     "couldn't verify naked pointer safety of call argument");
+                return;
+              }
+            }
+            ++it;
+            ++jt;
           }
-          return;
+          if (it == args.end() && jt == params.end()) {
+            // this is ok!
+            return;
+          }
         }
       }
     }
