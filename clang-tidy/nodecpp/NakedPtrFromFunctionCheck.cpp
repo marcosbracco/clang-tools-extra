@@ -59,6 +59,9 @@ void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
           while (it != args.end() && jt != params.end()) {
             auto arg = (*jt)->getType().getCanonicalType();
             if (canArgumentGenerateOutput(ret, arg)) {
+              //diag((*it)->getExprLoc(),
+              //     "check this argument");
+
               if (!checkArgument(Result.Context, lhs, *it)) {
                 diag((*it)->getExprLoc(),
                      "couldn't verify naked pointer safety of call argument");

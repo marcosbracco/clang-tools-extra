@@ -18,19 +18,19 @@ namespace clang {
 namespace tidy {
 namespace test {
 
-
-template<class T>
-bool checkCode(const std::string &Code, const std::string& msg = std::string()) {
+template <class T>
+bool checkCode(const std::string &Code,
+               const std::string &msg = std::string()) {
   std::vector<ClangTidyError> Errors;
 
   test::runCheckOnCode<T>(Code, &Errors);
   if (Errors.empty())
     return true;
-//  EXPECT_TRUE(Errors.size() == 1);
+  //  EXPECT_TRUE(Errors.size() == 1);
   if (Errors.size() != 1) {
     for (size_t i = 0; i != Errors.size(); ++i) {
       EXPECT_EQ(Errors[i].Message.Message, "");
-	}
+    }
     EXPECT_TRUE(false);
   }
   EXPECT_TRUE(msg.empty() || Errors[0].Message.Message == msg);
@@ -64,54 +64,54 @@ TEST(NodeCppModuleTest, NakedPtrAssignmentCheck) {
 
 TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };\n"
-														"int main() { Bad b; }"));
+                                                      "int main() { Bad b; }"));
 
-    std::string good = "namespace nodecpp {\n"
+  std::string good = "namespace nodecpp {\n"
                      "    template<class T>\n"
                      "    class unique_ptr {\n"
                      "      T* t;\n"
                      "    };\n"
                      "}\n";
 
-    std::string bad = "template<class T>\n"
-                      "class bad_ptr {\n"
-                      "      T* t;\n"
-                      "    };\n";
+  std::string bad = "template<class T>\n"
+                    "class bad_ptr {\n"
+                    "      T* t;\n"
+                    "    };\n";
 
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(good +
-                                                      "int main() { nodecpp::unique_ptr<int> i; }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
+      good + "int main() { nodecpp::unique_ptr<int> i; }"));
 
-    EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
       good + "class Good { nodecpp::unique_ptr<int> i; };\n"
-		"int main() { Good g; }"));
+             "int main() { Good g; }"));
 
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
-        bad + "int main() { bad_ptr<int> i; }"));
+      bad + "int main() { bad_ptr<int> i; }"));
 
-    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
       bad + "class Bad { bad_ptr<int> i; };\n"
-             "int main() { Bad b; }"));
+            "int main() { Bad b; }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int* p1; func(p1); }"));
+      "int main() { int* p1; func(p1); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int i; func(&i); }"));
+      "int main() { int i; func(&i); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int* p1; int* p2 = func(p1); }"));
+      "int main() { int* p1; int* p2 = func(p1); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int i; int* p2 = func(&i); }"));
+      "int main() { int i; int* p2 = func(&i); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int* p1; int i; p1 = func(p1); }"));
+      "int main() { int* p1; int i; p1 = func(p1); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
-	  "int main() { int* p1; int i; p1 = func(&i); }"));
+      "int main() { int* p1; int i; p1 = func(&i); }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "int main() { int* p1; { p1 = func(p1); } }"));
@@ -131,7 +131,7 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
       "int* func(int*);"
       "int main() { int* p1; int i = *(func(p1)); }"));
 
-    EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int*);"
       "int main() { int* p1; { int i; p1 = func(&i); } }"));
 
@@ -149,8 +149,21 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "int* func(int, int*);"
       "int main() { int* p1; {int i; p1 = func(i, p1); } }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int&);"
+      "int main() { int* p1; {int i; p1 = func(i); } }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int);"
+      "int main() { int* p1; {int i; p1 = func(i); } }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "struct Some {};"
+	  "int* func(Some&);"
+      "int main() { int* p1; {Some s; p1 = func(s); } }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "struct Some {};"
+      "Some* func(int&);"
+      "int main() { Some* sp; {int i; sp = func(i); } }"));
 }
-
 
 TEST(NodeCppModuleTest, NakedPtrFromMethodCheck) {
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromMethodCheck>(
@@ -211,19 +224,17 @@ TEST(NodeCppModuleTest, NakedPtrFuncCheck) {
       checkCode<nodecpp::NakedPtrFuncCheck>("void bad(int* a, int*& b);"));
 }
 
-
 TEST(NodeCppModuleTest, NewExprCheckArray) {
   EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>("int main() { new int[1]; }"));
 }
 TEST(NodeCppModuleTest, NewExprCheckPtr) {
-    EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>("int main() { new int*; }"));
+  EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>("int main() { new int*; }"));
 }
 TEST(NodeCppModuleTest, NewExprCheck) {
   EXPECT_FALSE(
-          checkCode<nodecpp::NewExprCheck>("int main() { int* i = new int; }"));
+      checkCode<nodecpp::NewExprCheck>("int main() { int* i = new int; }"));
   EXPECT_FALSE(
       checkCode<nodecpp::NewExprCheck>("int main() { int* i = new int(0); }"));
-
 
   std::string bad = "class unique_ptr {\n"
                     "public:\n"
@@ -231,26 +242,26 @@ TEST(NodeCppModuleTest, NewExprCheck) {
                     "    unique_ptr(int *ptr){}\n"
                     "    void reset(int *ptr){}\n"
                     "};\n";
-  EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>(bad + 
-	  "int main() { unique_ptr p(new int); }"));
+  EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>(
+      bad + "int main() { unique_ptr p(new int); }"));
   EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>(
       bad + "int main() { unique_ptr p; p.reset(new int); }"));
 
-  std::string good = 
-				    "namespace nodecpp {\n"
+  std::string good = "namespace nodecpp {\n"
                      "    template<class T>\n"
-                    "    class unique_ptr {\n"
-                    "    public:\n"
-                    "        unique_ptr(){}\n"
-                    "        unique_ptr(T* ptr){}\n"
-                    "        void reset(T* ptr){}\n"
-                    "    };\n"
-					"}\n";
+                     "    class unique_ptr {\n"
+                     "    public:\n"
+                     "        unique_ptr(){}\n"
+                     "        unique_ptr(T* ptr){}\n"
+                     "        void reset(T* ptr){}\n"
+                     "    };\n"
+                     "}\n";
 
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
       good + "int main() { nodecpp::unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good + "using namespace nodecpp; int main() { unique_ptr<int> p(new int); }"));
+      good +
+      "using namespace nodecpp; int main() { unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
       good + "int main() { nodecpp::unique_ptr<int> p; p.reset(new int); }"));
 }
@@ -265,10 +276,10 @@ TEST(NodeCppModuleTest, NoCastCheck) {
 }
 
 TEST(NodeCppModuleTest, PtrArithmeticCheck) {
-  EXPECT_FALSE(
-      checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; a = a + 1; }"));
-  EXPECT_FALSE(
-      checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; a = a - 1; }"));
+  EXPECT_FALSE(checkCode<nodecpp::PtrArithmeticCheck>(
+      "int main() { int* a; a = a + 1; }"));
+  EXPECT_FALSE(checkCode<nodecpp::PtrArithmeticCheck>(
+      "int main() { int* a; a = a - 1; }"));
   EXPECT_FALSE(
       checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; a += 1; }"));
   EXPECT_FALSE(
@@ -281,12 +292,13 @@ TEST(NodeCppModuleTest, PtrArithmeticCheck) {
       checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; ++a; }"));
   EXPECT_FALSE(
       checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; --a; }"));
-  EXPECT_FALSE(
-      checkCode<nodecpp::PtrArithmeticCheck>("int main() { int* a; int b = a[1]; }"));
+  EXPECT_FALSE(checkCode<nodecpp::PtrArithmeticCheck>(
+      "int main() { int* a; int b = a[1]; }"));
 }
 
 TEST(NodeCppModuleTest, StaticStorageCheck) {
-  EXPECT_TRUE(checkCode<nodecpp::StaticStorageCheck>("constexpr int good = 5;"));
+  EXPECT_TRUE(
+      checkCode<nodecpp::StaticStorageCheck>("constexpr int good = 5;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("int bad;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("extern int bad;"));
   EXPECT_FALSE(checkCode<nodecpp::StaticStorageCheck>("static int bad;"));
@@ -295,13 +307,11 @@ TEST(NodeCppModuleTest, StaticStorageCheck) {
   EXPECT_FALSE(
       checkCode<nodecpp::StaticStorageCheck>("int main() { static int bad; }"));
 
-  EXPECT_TRUE(
-      checkCode<nodecpp::StaticStorageCheck>("class Good { static constexpr int good = 5; };"));
+  EXPECT_TRUE(checkCode<nodecpp::StaticStorageCheck>(
+      "class Good { static constexpr int good = 5; };"));
   EXPECT_FALSE(
       checkCode<nodecpp::StaticStorageCheck>("class Bad { static int bad; };"));
 }
-
-
 
 } // namespace test
 } // namespace tidy

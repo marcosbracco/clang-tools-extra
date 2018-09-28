@@ -152,31 +152,34 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
   assert(out.isCanonical());
   assert(arg.isCanonical());
 
-  bool outIsBuiltIn = false;
   const Type *t = out.getTypePtrOrNull();
-  if (t && t->isPointerType()) {
-    const Type *t2 = t->getPointeeType().getTypePtrOrNull();
-    if (t2 && t2->isBuiltinType()) {
-      outIsBuiltIn = true;
-    }
-  } else {
+  if (!t || !t->isPointerType())
     return false;
-  }
+
+  auto qt2 = t->getPointeeType();
+  const Type *t2 = qt2.getTypePtrOrNull();
+  if (!t2)
+    return false;
 
   const Type *targ = arg.getTypePtrOrNull();
-  if (targ && (targ->isPointerType() || targ->isReferenceType())) {
-    const Type *t2arg = targ->getPointeeType().getTypePtrOrNull();
-    if (t2arg && t2arg->isBuiltinType()) {
-      if (!outIsBuiltIn) {
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      return true;
-    }
-  } else {
+  if (!(targ && (targ->isPointerType() || targ->isReferenceType())))
     return false;
+
+  auto qt2arg = targ->getPointeeType();
+  const Type *t2arg = qt2arg.getTypePtrOrNull();
+  if (!t2arg)
+    return false;
+
+  //assume non builtins, can generate any kind of naked pointers
+  if (!t2arg->isBuiltinType())
+    return true;
+
+  if (t2arg != t2)
+    return false;
+  else {
+    //qt2.dump();
+    //qt2arg.dump();
+    return qt2.isAtLeastAsQualifiedAs(qt2arg);
   }
 }
 
