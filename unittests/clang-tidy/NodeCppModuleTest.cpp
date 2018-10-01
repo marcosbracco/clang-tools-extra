@@ -136,33 +136,39 @@ TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
       "int main() { int* p1; { int i; p1 = func(&i); } }"));
 
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int*, int*);"
+      "int* func(int*, int*);" // here both args are ok
       "int main() { int* p1; int i; p1 = func(p1, &i); }"));
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int*, int*);"
-      "int main() { int* p1; {int i; p1 = func(p1, &i); } }"));
 
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int*, int*);"
+      "int* func(int*, int*);" // worry about both args
+      "int main() { int* p1; {int i; p1 = func(p1, &i); } }"));
+  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int*, int*);" // worry about both args
       "int main() { int* p1; {int i; p1 = func(&i, p1); } }"));
 
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int, int*);"
+      "int* func(int, int*);" // worry only about int*
       "int main() { int* p1; {int i; p1 = func(i, p1); } }"));
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int&);"
+      "int* func(int&);" // do worry about int&
       "int main() { int* p1; {int i; p1 = func(i); } }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
-      "int* func(int);"
+      "int* func(int);" //don't worry about int as value
       "int main() { int* p1; {int i; p1 = func(i); } }"));
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "struct Some {};"
-	  "int* func(Some&);"
+	  "int* func(Some&);" // do worry about Some&
       "int main() { int* p1; {Some s; p1 = func(s); } }"));
   EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
       "struct Some {};"
-      "Some* func(int&);"
+      "Some* func(int&);" // int& can't be converted to Some*
       "int main() { Some* sp; {int i; sp = func(i); } }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "int* func(int*, char*);" //don't worry about char*
+      "int main() { int* p1; { char* cp; p1 = func(p1, cp); } }"));
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFromFunctionCheck>(
+      "char* func(char*, const char*);" //don't worry about const char*
+      "int main() { char* p1; { const char* cp; p1 = func(p1, cp); } }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFromMethodCheck) {
