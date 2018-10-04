@@ -82,7 +82,7 @@ void NakedPtrFromOperatorCheck::check(const MatchFinder::MatchResult &Result) {
         }
 
 		auto rDecl = cast<CXXMethodDecl>(decl)->getParent();
-        if (!rDecl->isEmpty()) {
+        if (!rDecl->isLambda()) {
 			if (!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(base))) {
 			  diag(base->getExprLoc(), "naked pointer not allowed to "
 									   "extend the context of 'this'");

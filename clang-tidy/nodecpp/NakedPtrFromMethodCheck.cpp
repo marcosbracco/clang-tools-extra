@@ -64,13 +64,10 @@ void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
             return;
           }
 
-          if (!decl->getParent()->isEmpty()) {
-            if (!declRefCheck(Result.Context, lhs,
-                              dyn_cast<DeclRefExpr>(base))) {
-              diag(base->getExprLoc(),
-                   "naked pointer not allowed to extend the context of 'this'");
-              return;
-            }
+          if (!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(base))) {
+            diag(base->getExprLoc(),
+                 "naked pointer not allowed to extend the context of 'this'");
+            return;
           }
           // then check arguments
 
