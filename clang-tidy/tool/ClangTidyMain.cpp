@@ -52,8 +52,8 @@ Configuration files:
 )");
 
 const char DefaultChecks[] = // Enable these checks by default:
-//    "clang-diagnostic-*,"    //   * compiler diagnostics
-//    "clang-analyzer-*,"      //   * Static Analyzer checks
+    "clang-diagnostic-*,"    //   * compiler diagnostics
+    "clang-analyzer-*,"      //   * Static Analyzer checks
     "nodecpp-*";			 //   * Node.Cpp checks
 
 static cl::opt<std::string> Checks("checks", cl::desc(R"(

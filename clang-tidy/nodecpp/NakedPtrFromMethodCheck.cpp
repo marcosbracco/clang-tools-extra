@@ -58,18 +58,21 @@ void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
             return;
           }
 
-          if (!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(base))) {
-            diag(base->getExprLoc(),
-                 "naked pointer not allowed to extend the context of 'this'");
-            return;
-          }
-
-          // then check arguments
-          const auto *decl = m->getMethodDecl();
+		  const auto *decl = m->getMethodDecl();
           if (!decl) {
             diag(m->getExprLoc(), "callee declaration not available");
             return;
           }
+
+          if (!decl->getParent()->isEmpty()) {
+            if (!declRefCheck(Result.Context, lhs,
+                              dyn_cast<DeclRefExpr>(base))) {
+              diag(base->getExprLoc(),
+                   "naked pointer not allowed to extend the context of 'this'");
+              return;
+            }
+          }
+          // then check arguments
 
           auto params = decl->parameters();
           auto ret = decl->getReturnType().getCanonicalType();

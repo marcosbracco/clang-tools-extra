@@ -17,19 +17,19 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-const BinaryOperator *
-getParentBinOp(ASTContext *context,
-                                                   const Expr *expr)
-{
+const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
 
   auto sList = context->getParents(*expr);
 
   auto sIt = sList.begin();
 
-  if (sIt != sList.end())
-    return sIt->get<BinaryOperator>();
-  else
+  if (sIt == sList.end())
     return nullptr;
+
+  if (auto p = sIt->get<ParenExpr>())
+    return getParentBinOp(context, p);
+  else
+    return sIt->get<BinaryOperator>();
 }
 
 bool isParentCompStmt(ASTContext *context,

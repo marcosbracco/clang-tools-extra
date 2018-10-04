@@ -181,6 +181,7 @@ Clang-Tidy Checks
    nodecpp-naked-ptr-field
    nodecpp-naked-ptr-from-function
    nodecpp-naked-ptr-from-method
+   nodecpp-naked-ptr-from-operator
    nodecpp-new-expr
    nodecpp-no-cast
    nodecpp-ptr-arithmetic
