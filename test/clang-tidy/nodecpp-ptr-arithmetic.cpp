@@ -1,14 +1,25 @@
 // RUN: %check_clang_tidy %s nodecpp-ptr-arithmetic %t
 
-// FIXME: Add something that triggers the check here.
-void f();
+
+void bad() {
+	int* a;
+
+	a = a + 1;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
-
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
-
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+	a = a - 1;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	a += 1;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	a -= 1;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	a++;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	++a;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	a--;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	--a;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+	int b = a[0];
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-ptr-arithmetic]
+}

@@ -314,21 +314,27 @@ static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider() {
   if (FormatStyle.getNumOccurrences() > 0)
     OverrideOptions.FormatStyle = FormatStyle;
 
-  if (!Config.empty()) {
-    if (llvm::ErrorOr<ClangTidyOptions> ParsedConfig =
-            parseConfiguration(Config)) {
-      return llvm::make_unique<ConfigOptionsProvider>(
-          GlobalOptions,
-          ClangTidyOptions::getDefaults().mergeWith(DefaultOptions),
-          *ParsedConfig, OverrideOptions);
-    } else {
-      llvm::errs() << "Error: invalid configuration specified.\n"
-                   << ParsedConfig.getError().message() << "\n";
-      return nullptr;
-    }
-  }
-  return llvm::make_unique<FileOptionsProvider>(GlobalOptions, DefaultOptions,
-                                                OverrideOptions);
+  ClangTidyOptions Options;
+  llvm::ErrorOr<ClangTidyOptions> ParsedConfig(Options);
+  return llvm::make_unique<ConfigOptionsProvider>(
+      GlobalOptions, ClangTidyOptions::getDefaults().mergeWith(DefaultOptions),
+      *ParsedConfig, OverrideOptions);
+
+  //if (!Config.empty()) {
+  //  if (llvm::ErrorOr<ClangTidyOptions> ParsedConfig =
+  //          parseConfiguration(Config)) {
+  //    return llvm::make_unique<ConfigOptionsProvider>(
+  //        GlobalOptions,
+  //        ClangTidyOptions::getDefaults().mergeWith(DefaultOptions),
+  //        *ParsedConfig, OverrideOptions);
+  //  } else {
+  //    llvm::errs() << "Error: invalid configuration specified.\n"
+  //                 << ParsedConfig.getError().message() << "\n";
+  //    return nullptr;
+  //  }
+  //}
+  //return llvm::make_unique<FileOptionsProvider>(GlobalOptions, DefaultOptions,
+  //                                              OverrideOptions);
 }
 
 static int clangTidyMain(int argc, const char **argv) {

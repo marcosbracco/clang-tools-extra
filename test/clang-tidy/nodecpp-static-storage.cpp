@@ -1,14 +1,31 @@
 // RUN: %check_clang_tidy %s nodecpp-static-storage %t
 
-// FIXME: Add something that triggers the check here.
-void f();
+
+constexpr int good = 5;
+
+int bad1;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
 
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
+extern int bad2;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
 
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+static int bad3;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+
+thread_local int bad4;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+
+void func() {
+	static int bad;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+}
+
+class Good {
+	static constexpr int good = 5;
+};
+
+
+class Bad {
+	static int bad;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+};

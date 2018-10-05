@@ -1,14 +1,50 @@
 // RUN: %check_clang_tidy %s nodecpp-naked-ptr-field %t
 
-// FIXME: Add something that triggers the check here.
-void f();
+
+namespace nodecpp {
+template<class T>
+class unique_ptr {
+	T* t;
+};
+}
+
+template<class T>
+class bad_ptr {
+	T* t;
+};
+
+class Bad1 {
+	int* i;
+};
+    
+void bad1() {
+	Bad1 b;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+}
 
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
+void good1() {
+	nodecpp::unique_ptr<int> i;
+}
 
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+class Good {
+	nodecpp::unique_ptr<int> i;
+};
+
+void good2() {
+	Good g;
+}
+
+void bad2() {
+	bad_ptr<int> i;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+}
+
+class Bad3 {
+	bad_ptr<int> i;
+};
+
+void bad3() {
+	Bad3 b;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+}
+

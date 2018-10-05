@@ -1,14 +1,20 @@
 // RUN: %check_clang_tidy %s nodecpp-no-cast %t
 
-// FIXME: Add something that triggers the check here.
-void f();
+
+void bad1() { 
+	size_t i;
+	auto r = reinterpret_cast<void*>(i);
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+}
 
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
+void bad2() {
+	size_t i;
+	auto r = (void*)i;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+}
 
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+void bad3() {
+	void* p;
+	auto r = static_cast<size_t*>(p);
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+}

@@ -1,14 +1,42 @@
 // RUN: %check_clang_tidy %s nodecpp-naked-ptr-assignment %t
 
-// FIXME: Add something that triggers the check here.
-void f();
+void good1() { 
+	int* p1; 
+	int* p2; 
+	p2 = p1; 
+}
+
+void good2() { 
+	int* p1; 
+	{ 
+		int* p2; 
+		p2 = p1;
+	}
+}
+
+void bad1() {
+	int* p1;
+	{
+		int* bad;
+		p1 = bad;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-assignment]
+	} 
+}
 
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
+void good3() {
+	int p1;
+	{
+		int* p2;
+		p2 = &p1;
+	}
+}
 
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+void bad2() {
+	int* p1;
+	{
+		int bad;
+		p1 = &bad;
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-assignment]
+	}
+}
+
