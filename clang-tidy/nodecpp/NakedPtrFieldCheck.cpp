@@ -20,7 +20,7 @@ namespace nodecpp {
 void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
 
   const auto NakedPtr = hasType(hasUnqualifiedDesugaredType(
-      anyOf(pointerType(), referenceType(pointee(pointerType())))));
+      anyOf(pointerType(), referenceType())));
 
   Finder->addMatcher(
       declaratorDecl(

@@ -32,8 +32,7 @@ void NakedPtrFromOperatorCheck::check(const MatchFinder::MatchResult &Result) {
 
 //  m->dumpColor();
 
-  if (isParentCompStmt(Result.Context, m) ||
-      isParentVarDecl(Result.Context, m)) {
+  if (isParentVarDeclOrCompStmtOrReturn(Result.Context, m)) {
     // this is always ok
     return;
   }

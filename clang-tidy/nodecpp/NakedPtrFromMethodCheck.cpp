@@ -31,8 +31,7 @@ void NakedPtrFromMethodCheck::check(const MatchFinder::MatchResult &Result) {
 
   //  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
 
-  if (isParentCompStmt(Result.Context, m) ||
-      isParentVarDecl(Result.Context, m)) {
+  if (isParentVarDeclOrCompStmtOrReturn(Result.Context, m)) {
     // this is ok
     return;
 

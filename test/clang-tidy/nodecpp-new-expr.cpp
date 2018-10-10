@@ -22,33 +22,33 @@ public:
   
 
 void bad1() {
-	new int[1];
+	new int[1]; //bad, array
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 
 void bad2() {
- new int*;
+ new int*; //bad, pointer
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 
 void bad3() {
-	int* i = new int;
+	int* i = new int; //bad, not owner
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 
 void bad4() {
-	int* i = new int(0);
+	int* i = new int(0); //bad, not owner
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 
 void bad5() {
-	unique_ptr p(new int);
+	unique_ptr p(new int); //bad, onwer class is not nodecpp::unique_ptr
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 
 void bad6() {
 	unique_ptr p; 
-	p.reset(new int);
+	p.reset(new int); //bad, onwer class is not nodecpp::unique_ptr
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-new-expr]
 }
 

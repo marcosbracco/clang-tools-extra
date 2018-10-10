@@ -16,6 +16,86 @@ using namespace clang::ast_matchers;
 namespace clang {
 namespace tidy {
 namespace nodecpp {
+bool checkRecordAsHeapSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl) {
+
+  if (!Decl) {
+    return false;
+  }
+
+  auto F = Decl->fields();
+  for (auto It = F.begin(); It != F.end(); ++It) {
+    auto Field = *It;
+		
+	auto Ft = Field->getType().getCanonicalType()
+                  .getTypePtrOrNull();
+    if (!Ft) {
+      Check->diag(Field->getTypeSpecStartLoc(),
+                  "failed to verify field safety for heap allocation",
+                  DiagnosticIDs::Warning);
+      return false;
+    }
+    else if (Ft->isReferenceType()) {
+      Check->diag(
+          Field->getTypeSpecStartLoc(),
+          "type with reference field can not be allocated on the heap",
+          DiagnosticIDs::Warning);
+      return false;
+	  }
+      else if (Ft->isPointerType()) {
+        Check->diag(
+            Field->getTypeSpecStartLoc(),
+            "type with naked pointer field can not be allocated on the heap",
+            DiagnosticIDs::Warning);
+        return false;
+      }
+      else if (Ft->isBuiltinType()) {
+      continue;
+    } else if (Ft->isRecordType()) {
+      if (!checkRecordAsHeapSafe(Check, Ft->getAsCXXRecordDecl())) {
+        Check->diag(
+            Field->getTypeSpecStartLoc(),
+            "referenced from here",
+            DiagnosticIDs::Note);
+        return false;
+	  }
+    } else {
+      Check->diag(
+          Field->getTypeSpecStartLoc(),
+          "failed to verify field safety for heap allocation",
+          DiagnosticIDs::Warning);
+      return false;
+	}
+  }
+
+  auto B = Decl->bases();
+  for (auto It = B.begin(); It != B.end(); ++It) {
+    auto Base = *It;
+    auto Bt = Base.getType().getCanonicalType().getTypePtrOrNull();
+    if (!Bt) {
+      Check->diag(Base.getLocStart(),
+                  "failed to verify base safety for heap allocation",
+                  DiagnosticIDs::Warning);
+      return false;
+    } else if (Bt->isRecordType()) {
+      if (!checkRecordAsHeapSafe(Check, Bt->getAsCXXRecordDecl())) {
+        Check->diag(Base.getLocStart(), "referenced from here",
+                    DiagnosticIDs::Note);
+        return false;
+      }
+	
+	} else {
+      Check->diag(Base.getLocStart(),
+                  "failed to verify base safety for heap allocation",
+                  DiagnosticIDs::Warning);
+          return false;
+	}
+
+  }
+
+  // finally we are safe!
+  return true;
+}
+
 
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
 
@@ -32,31 +112,45 @@ const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
     return sIt->get<BinaryOperator>();
 }
 
-bool isParentCompStmt(ASTContext *context,
-                                                   const Expr *expr) {
+const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
 
   auto sList = context->getParents(*expr);
 
   auto sIt = sList.begin();
 
-  if (sIt != sList.end())
-    return sIt->get<CompoundStmt>() != nullptr;
+  if (sIt == sList.end())
+    return nullptr;
+
+  if (auto p = sIt->get<ParenExpr>())
+    return getParentExpr(context, p);
+  else if (auto p = sIt->get<ImplicitCastExpr>())
+    return getParentExpr(context, p);
   else
-    return false;
+    return sIt->get<Expr>();
 }
 
-bool isParentVarDecl(ASTContext *context,
-                                           const Expr *expr) {
-
+bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr)
+{
   auto sList = context->getParents(*expr);
 
   auto sIt = sList.begin();
 
-  if (sIt != sList.end())
-    return sIt->get<VarDecl>() != nullptr;
-  else
-    return false;
+  if (sIt != sList.end()) {
+    if (sIt->get<VarDecl>() != nullptr)
+      return true;
+    else if (sIt->get<CompoundStmt>() != nullptr)
+      return true;
+    else if (sIt->get<ReturnStmt>() != nullptr)
+      return true;
+    else if (sIt->get<ImplicitCastExpr>() != nullptr)
+      return isParentVarDeclOrCompStmtOrReturn(
+          context, sIt->get<ImplicitCastExpr>());
+  }
+
+  return false;
 }
+
+
 const Stmt *getParentStmt(ASTContext *context,
                                                    const Stmt *stmt) {
 

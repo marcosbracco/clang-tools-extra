@@ -20,11 +20,13 @@ void f() {
 
 		auto f = [&](int* p, long) { return p; };
 
-
 		p1 = f(p1, l); //ok
 
 		p1 = f(&i, l); // bad i goes out of scope
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+
+
+
 
 		p1 = (s >> p1); //ok function op
 

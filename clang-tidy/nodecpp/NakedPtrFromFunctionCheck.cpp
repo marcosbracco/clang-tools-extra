@@ -26,12 +26,14 @@ void NakedPtrFromFunctionCheck::registerMatchers(MatchFinder *Finder) {
 void NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
 
 	const auto *m = Result.Nodes.getNodeAs<CallExpr>("call");
+
+	//this two have their own rules
   if (isa<CXXOperatorCallExpr>(m) || isa<CXXMemberCallExpr>(m))
     return;
 
       //  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
 
-  if (isParentCompStmt(Result.Context, m) || isParentVarDecl(Result.Context, m)) {
+  if (isParentVarDeclOrCompStmtOrReturn(Result.Context, m)) {
     // this is ok
     return;
 

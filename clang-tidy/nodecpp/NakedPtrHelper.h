@@ -21,9 +21,13 @@ namespace nodecpp {
 /// For the user-facing documentation see:
 /// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-function.html
 
+bool checkRecordAsHeapSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl);
+
+
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr);
-bool isParentCompStmt(ASTContext *context, const Expr *expr);
-bool isParentVarDecl(ASTContext *context, const Expr *expr);
+const Expr *getParentExpr(ASTContext *context, const Expr *expr);
+bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr);
+
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
 bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
