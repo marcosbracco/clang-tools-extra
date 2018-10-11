@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "NakedPtrFieldCheck.h"
+#include "NakedPtrHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -19,48 +20,40 @@ namespace nodecpp {
 
 void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
 
-  const auto NakedPtr = hasType(hasUnqualifiedDesugaredType(
-      anyOf(pointerType(), referenceType())));
+  // const auto NakedPtr = hasType(hasUnqualifiedDesugaredType(
+  //    anyOf(pointerType(), referenceType())));
 
-  Finder->addMatcher(
-      declaratorDecl(
-          hasType(recordDecl(hasDescendant(fieldDecl(NakedPtr).bind("field")),
-                             unless(hasName("::nodecpp::unique_ptr")),
-                             unless(hasName("::nodecpp::soft_ptr")))))
-          .bind("decl"),
+  // Finder->addMatcher(
+  //    declaratorDecl(
+  //        hasType(recordDecl(hasDescendant(fieldDecl(NakedPtr).bind("field")),
+  //                           unless(hasName("::nodecpp::unique_ptr")),
+  //                           unless(hasName("::nodecpp::soft_ptr")))))
+  //        .bind("decl"),
+  //    this);
+
+  Finder->addMatcher(varDecl(unless(isImplicit()), unless(hasParent(cxxConstructorDecl()))).bind("var"), this);
+  Finder->addMatcher(fieldDecl(hasType(
+                                   cxxRecordDecl(
+                                   hasName ("nodecpp::unique_ptr"))))
+          .bind("fld"),
       this);
-}
-
-bool NakedPtrFieldCheck::moreCheck(const Type *type) {
-  if (type) {
-    auto c = type->getTypeClass();
-    if (c == Type::TypeClass::Builtin) {
-      return true;
-    } else if (c == Type::TypeClass::Record) {
-      auto rt = type->getAs<RecordType>();
-      auto itr = rt->getDecl()->fields();
-      for (auto it = itr.begin(); it != itr.end(); ++it) {
-        if (!moreCheck(it->getType().getTypePtrOrNull()))
-          return false;
-      }
-      return true;
-    } else {
-      type->dump();
-      return false;
-    }
-  }
 }
 
 void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<Decl>("decl");
-
-  diag(MatchedDecl->getLocation(),
-       "do not use types with naked pointer fields");
-
-  const auto *MatchedField = Result.Nodes.getNodeAs<FieldDecl>("field");
-
-  diag(MatchedField->getLocation(), "field declared here", DiagnosticIDs::Note);
+  const auto *M = Result.Nodes.getNodeAs<VarDecl>("var");
+  if (M) {
+    auto loc = M->getTypeSpecStartLoc().isValid() ? M->getTypeSpecStartLoc()
+                                                  : M->getLocation();
+    if (!checkTypeAsStackSafe(this, M->getType(), loc)) {
+		//Diag is already printed
+//      M->dumpColor();
+//      diag(M->getLocation(), "declaration with naked pointer");
+      return;
+    }
+  } else if (auto F = Result.Nodes.getNodeAs<FieldDecl>("fld")) {
+	//TODO check that Template argument of unique_ptr is a heap safe
+  }
 }
 
 } // namespace nodecpp

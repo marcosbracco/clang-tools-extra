@@ -16,53 +16,84 @@ using namespace clang::ast_matchers;
 namespace clang {
 namespace tidy {
 namespace nodecpp {
-bool checkRecordAsHeapSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl) {
+
+const char *UniquePtrName = "nodecpp::unique_ptr";
+
+
+bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
+                         unsigned NakedPtrLevel) {
+
+  auto Ft = Qt.getCanonicalType().getTypePtrOrNull();
+  if (!Ft) {
+    Check->diag(Sl,
+                "failed to verify type safety",
+                DiagnosticIDs::Warning);
+    return false;
+  } else if (Ft->isReferenceType()) {
+    if (NakedPtrLevel == 0) {
+		Check->diag(Sl,
+					"reference type not allowed",
+					DiagnosticIDs::Warning);
+		return false;
+    } else {
+      return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
+	}
+  } else if (Ft->isPointerType()) {
+    if (NakedPtrLevel == 0) {
+      Check->diag(
+        Sl,
+        "naked pointer type not allowed",
+        DiagnosticIDs::Warning);
+		return false;
+    } else {
+      return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
+	}
+  } else if (Ft->isBuiltinType()) {
+    return true;
+  } else if (Ft->isRecordType()) {
+    if (checkRecordAsSafe(Check, Ft->getAsCXXRecordDecl(), NakedPtrLevel)) {
+      return true;
+	} else {
+      Check->diag(Sl, "referenced from here",
+                  DiagnosticIDs::Note);
+      return false;
+    }
+  } else if (Ft->isTemplateTypeParmType()) {
+    // we will take care at instantiation
+    return true;
+  } else {
+    Ft->dump();
+    Check->diag(Sl,
+                "failed to verify type safety",
+                DiagnosticIDs::Warning);
+    return false;
+  }
+}
+
+bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
+                       unsigned NakedPtrLevel) {
 
   if (!Decl) {
     return false;
   }
 
+  auto Name = Decl->getQualifiedNameAsString();
+  if (Name == UniquePtrName) {
+	//this is a well known class, 
+    //auto TempDecl = cast<ClassTemplateSpecializationDecl>(Decl);
+    //auto& Arg = TempDecl->getTemplateArgs()[0];
+    //bool s = checkTypeAsHeapSafe(Check, Arg.getAsType(), Decl->getLocation());
+
+	return true;
+  }
+
   auto F = Decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
-    auto Field = *It;
-		
-	auto Ft = Field->getType().getCanonicalType()
-                  .getTypePtrOrNull();
-    if (!Ft) {
-      Check->diag(Field->getTypeSpecStartLoc(),
-                  "failed to verify field safety for heap allocation",
-                  DiagnosticIDs::Warning);
-      return false;
-    }
-    else if (Ft->isReferenceType()) {
-      Check->diag(
-          Field->getTypeSpecStartLoc(),
-          "type with reference field can not be allocated on the heap",
-          DiagnosticIDs::Warning);
-      return false;
-	  }
-      else if (Ft->isPointerType()) {
-        Check->diag(
-            Field->getTypeSpecStartLoc(),
-            "type with naked pointer field can not be allocated on the heap",
-            DiagnosticIDs::Warning);
-        return false;
-      }
-      else if (Ft->isBuiltinType()) {
-      continue;
-    } else if (Ft->isRecordType()) {
-      if (!checkRecordAsHeapSafe(Check, Ft->getAsCXXRecordDecl())) {
-        Check->diag(
-            Field->getTypeSpecStartLoc(),
-            "referenced from here",
-            DiagnosticIDs::Note);
-        return false;
-	  }
-    } else {
-      Check->diag(
-          Field->getTypeSpecStartLoc(),
-          "failed to verify field safety for heap allocation",
-          DiagnosticIDs::Warning);
+
+	  if (!checkTypeAsSafe(Check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
+                         NakedPtrLevel)) {
+      Check->diag((*It)->getTypeSpecStartLoc(), "failed to verify field",
+                  DiagnosticIDs::Note);
       return false;
 	}
   }
@@ -70,26 +101,14 @@ bool checkRecordAsHeapSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl) {
   auto B = Decl->bases();
   for (auto It = B.begin(); It != B.end(); ++It) {
     auto Base = *It;
-    auto Bt = Base.getType().getCanonicalType().getTypePtrOrNull();
-    if (!Bt) {
-      Check->diag(Base.getLocStart(),
-                  "failed to verify base safety for heap allocation",
-                  DiagnosticIDs::Warning);
-      return false;
-    } else if (Bt->isRecordType()) {
-      if (!checkRecordAsHeapSafe(Check, Bt->getAsCXXRecordDecl())) {
-        Check->diag(Base.getLocStart(), "referenced from here",
-                    DiagnosticIDs::Note);
-        return false;
-      }
-	
-	} else {
-      Check->diag(Base.getLocStart(),
-                  "failed to verify base safety for heap allocation",
-                  DiagnosticIDs::Warning);
-          return false;
-	}
 
+	if (!checkTypeAsSafe(Check, (*It).getType(), (*It).getLocStart(),
+                         NakedPtrLevel)) {
+      Check->diag(Base.getLocStart(),
+                  "failed to verify base",
+                  DiagnosticIDs::Note);
+      return false;
+    }
   }
 
   // finally we are safe!
