@@ -63,7 +63,7 @@ TEST(NodeCppModuleTest, NakedPtrAssignmentCheck) {
 }
 
 TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };\n"
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };\n"
                                                       "int main() { Bad b; }"));
 
   std::string good = "namespace nodecpp {\n"
@@ -85,10 +85,10 @@ TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
       good + "class Good { nodecpp::unique_ptr<int> i; };\n"
              "int main() { Good g; }"));
 
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
       bad + "int main() { bad_ptr<int> i; }"));
 
-  EXPECT_FALSE(checkCode<nodecpp::NakedPtrFieldCheck>(
+  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
       bad + "class Bad { bad_ptr<int> i; };\n"
             "int main() { Bad b; }"));
 }

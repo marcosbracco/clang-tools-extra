@@ -18,8 +18,7 @@ class Bad1 {
 };
     
 void bad1() {
-	Bad1 b;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+	Bad1 b; //ok now 
 }
 
 void good1() {
@@ -35,8 +34,7 @@ void good2() {
 }
 
 void bad2() {
-	bad_ptr<int> i;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+	bad_ptr<int> i; //ok now
 }
 
 class Bad3 {
@@ -44,7 +42,6 @@ class Bad3 {
 };
 
 void bad3() {
-	Bad3 b;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-field]
+	Bad3 b; //ok now
 }
 
