@@ -21,6 +21,9 @@ namespace nodecpp {
 /// For the user-facing documentation see:
 /// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-function.html
 
+bool isOwnerName(const std::string &Name);
+bool isSafeName(const std::string &Name);
+
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
                      unsigned NakedPtrLevel);
 bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
@@ -48,6 +51,31 @@ bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
                   const DeclRefExpr *rhs);
 
 bool canArgumentGenerateOutput(QualType out, QualType arg);
+
+
+class matcher_HeapSafeTypeMatcher
+      : public ::clang::ast_matchers::internal::MatcherInterface<Type> {
+  public:
+  explicit matcher_HeapSafeTypeMatcher() = default;
+    bool matches(const Type &Node,
+               ::clang::ast_matchers::internal::ASTMatchFinder *Finder,
+               ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder)
+      const override;
+};
+inline ::clang::ast_matchers::internal::Matcher<Type> heapSafeType() {      
+    return ::clang::ast_matchers::internal::makeMatcher(                       
+        new matcher_HeapSafeTypeMatcher());                     
+  }                                                                            
+  inline bool matcher_HeapSafeTypeMatcher::matches(             
+      const Type &Node,                                                        
+      ::clang::ast_matchers::internal::ASTMatchFinder *Finder,                 
+      ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder) const {
+    return false;
+	  }
+
+
+
+
 } // namespace nodecpp
 } // namespace tidy
 } // namespace clang

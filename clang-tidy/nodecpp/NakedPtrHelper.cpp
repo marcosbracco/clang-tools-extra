@@ -17,8 +17,15 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-const char *UniquePtrName = "nodecpp::unique_ptr";
+bool isOwnerName(const std::string &Name) {
+  return Name == "std::unique_ptr";
+}
 
+bool isSafeName(const std::string &Name) {
+  return isOwnerName(Name) || Name == "nodecpp::net::Socket" ||
+         Name == "nodecpp::net::Server" || Name == "nodecpp::net::Address" ||
+         Name == "nodecpp::net::SocketTBase";
+}
 
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
                          unsigned NakedPtrLevel) {
@@ -78,12 +85,8 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   }
 
   auto Name = Decl->getQualifiedNameAsString();
-  if (Name == UniquePtrName) {
+  if (isSafeName(Name)) {
 	//this is a well known class, 
-    //auto TempDecl = cast<ClassTemplateSpecializationDecl>(Decl);
-    //auto& Arg = TempDecl->getTemplateArgs()[0];
-    //bool s = checkTypeAsHeapSafe(Check, Arg.getAsType(), Decl->getLocation());
-
 	return true;
   }
 

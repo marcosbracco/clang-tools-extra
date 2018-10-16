@@ -50,7 +50,8 @@ void NewExprCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(ptrNew, this);
   */
 
-  Finder->addMatcher(cxxNewExpr().bind("new"), this);
+  Finder->addMatcher(
+      cxxNewExpr(unless(isExpansionInSystemHeader())).bind("new"), this);
 }
 
 void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
@@ -101,8 +102,7 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
 	  if (auto Constructor = dyn_cast<CXXConstructExpr>(Parent)) {
 		auto Decl = Constructor->getConstructor()->getParent();
             auto ClassName = Decl->getQualifiedNameAsString();
-            if (ClassName ==
-                    "nodecpp::unique_ptr") {
+                if (isOwnerName(ClassName)) {
 			//this is ok!
 		  return;
 		  }
@@ -112,9 +112,7 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
 		auto Decl = MemberCall->getMethodDecl()->getParent();
                 auto MethodName = Method->getNameAsString();
                 auto ClassName = Decl->getQualifiedNameAsString();
-                if (MethodName == "reset" &&
-                    ClassName ==
-			"nodecpp::unique_ptr") {
+                if (MethodName == "reset" && isOwnerName(ClassName)) {
 		  // this is ok!
 		  return;
 		}

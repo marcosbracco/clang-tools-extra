@@ -31,18 +31,29 @@ void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
   //        .bind("decl"),
   //    this);
 
-  Finder->addMatcher(varDecl(unless(isImplicit()), unless(hasParent(cxxConstructorDecl()))).bind("var"), this);
-  Finder->addMatcher(fieldDecl(hasType(
-                                   cxxRecordDecl(
-                                   hasName ("nodecpp::unique_ptr"))))
-          .bind("fld"),
-      this);
+  Finder->addMatcher(varDecl(unless(isExpansionInSystemHeader()),
+                                 unless(isImplicit()),
+                             unless(hasParent(cxxConstructorDecl())))
+                         .bind("var"),
+                     this);
+  //Finder->addMatcher(fieldDecl(hasType(
+  //                                 cxxRecordDecl(
+  //                                 hasName ("nodecpp::unique_ptr"))))
+  //        .bind("fld"),
+  //    this);
 }
 
 void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *M = Result.Nodes.getNodeAs<VarDecl>("var");
+
+
   if (M) {
+    // TODO improve
+    if (!M->getLocation().isValid() && !M->getTypeSpecStartLoc().isValid())
+      return;
+
+	M->dumpColor();
     auto loc = M->getTypeSpecStartLoc().isValid() ? M->getTypeSpecStartLoc()
                                                   : M->getLocation();
     if (!checkTypeAsStackSafe(this, M->getType(), loc)) {
