@@ -17,9 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-bool isOwnerName(const std::string &Name) {
-  return Name == "std::unique_ptr";
-}
+bool isOwnerName(const std::string &Name) { return Name == "std::unique_ptr"; }
 
 bool isSafeName(const std::string &Name) {
   return isOwnerName(Name) || Name == "nodecpp::net::Socket" ||
@@ -27,42 +25,53 @@ bool isSafeName(const std::string &Name) {
          Name == "nodecpp::net::SocketTBase";
 }
 
+bool hasNodeCppAttr(const VarDecl *Decl) {
+  if (!Decl) {
+    return false;
+  }
+
+	const Type* T = Decl->getType().getCanonicalType().getTypePtrOrNull();
+  if (!T) {
+	  return false;
+  }
+
+  T->dump();
+  auto Rd = T->getAsCXXRecordDecl();
+  if (!Rd)
+    return false;
+
+	return Rd->hasAttr<NodeCppMayExtendAttr>() ||
+         Rd->hasAttr<NodeCppNoInstanceAttr>();
+}
+
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
-                         unsigned NakedPtrLevel) {
+                     unsigned NakedPtrLevel) {
 
   auto Ft = Qt.getCanonicalType().getTypePtrOrNull();
   if (!Ft) {
-    Check->diag(Sl,
-                "failed to verify type safety",
-                DiagnosticIDs::Warning);
+    Check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
     return false;
   } else if (Ft->isReferenceType()) {
     if (NakedPtrLevel == 0) {
-		Check->diag(Sl,
-					"reference type not allowed",
-					DiagnosticIDs::Warning);
-		return false;
+      Check->diag(Sl, "reference type not allowed", DiagnosticIDs::Warning);
+      return false;
     } else {
       return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
-	}
+    }
   } else if (Ft->isPointerType()) {
     if (NakedPtrLevel == 0) {
-      Check->diag(
-        Sl,
-        "naked pointer type not allowed",
-        DiagnosticIDs::Warning);
-		return false;
+      Check->diag(Sl, "naked pointer type not allowed", DiagnosticIDs::Warning);
+      return false;
     } else {
       return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
-	}
+    }
   } else if (Ft->isBuiltinType()) {
     return true;
   } else if (Ft->isRecordType()) {
     if (checkRecordAsSafe(Check, Ft->getAsCXXRecordDecl(), NakedPtrLevel)) {
       return true;
-	} else {
-      Check->diag(Sl, "referenced from here",
-                  DiagnosticIDs::Note);
+    } else {
+      Check->diag(Sl, "referenced from here", DiagnosticIDs::Note);
       return false;
     }
   } else if (Ft->isTemplateTypeParmType()) {
@@ -70,9 +79,7 @@ bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
     return true;
   } else {
     Ft->dump();
-    Check->diag(Sl,
-                "failed to verify type safety",
-                DiagnosticIDs::Warning);
+    Check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
     return false;
   }
 }
@@ -86,29 +93,28 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
 
   auto Name = Decl->getQualifiedNameAsString();
   if (isSafeName(Name)) {
-	//this is a well known class, 
-	return true;
+    // this is a well known class,
+    return true;
   }
 
   auto F = Decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
 
-	  if (!checkTypeAsSafe(Check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
+    if (!checkTypeAsSafe(Check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
                          NakedPtrLevel)) {
       Check->diag((*It)->getTypeSpecStartLoc(), "failed to verify field",
                   DiagnosticIDs::Note);
       return false;
-	}
+    }
   }
 
   auto B = Decl->bases();
   for (auto It = B.begin(); It != B.end(); ++It) {
     auto Base = *It;
 
-	if (!checkTypeAsSafe(Check, (*It).getType(), (*It).getLocStart(),
+    if (!checkTypeAsSafe(Check, (*It).getType(), (*It).getLocStart(),
                          NakedPtrLevel)) {
-      Check->diag(Base.getLocStart(),
-                  "failed to verify base",
+      Check->diag(Base.getLocStart(), "failed to verify base",
                   DiagnosticIDs::Note);
       return false;
     }
@@ -117,7 +123,6 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   // finally we are safe!
   return true;
 }
-
 
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
 
@@ -151,8 +156,7 @@ const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
     return sIt->get<Expr>();
 }
 
-bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr)
-{
+bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr) {
   auto sList = context->getParents(*expr);
 
   auto sIt = sList.begin();
@@ -165,16 +169,14 @@ bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr)
     else if (sIt->get<ReturnStmt>() != nullptr)
       return true;
     else if (sIt->get<ImplicitCastExpr>() != nullptr)
-      return isParentVarDeclOrCompStmtOrReturn(
-          context, sIt->get<ImplicitCastExpr>());
+      return isParentVarDeclOrCompStmtOrReturn(context,
+                                               sIt->get<ImplicitCastExpr>());
   }
 
   return false;
 }
 
-
-const Stmt *getParentStmt(ASTContext *context,
-                                                   const Stmt *stmt) {
+const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 
   auto sList = context->getParents(*stmt);
 
@@ -186,10 +188,8 @@ const Stmt *getParentStmt(ASTContext *context,
     return nullptr;
 }
 
-
-bool declRefCheck(ASTContext *context,
-                                           const DeclRefExpr *lhs,
-                                           const DeclRefExpr *rhs) {
+bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
+                  const DeclRefExpr *rhs) {
   const auto *lhsDecl = lhs->getDecl();
   if (!lhsDecl) { // shouln't happend here
     return false;
@@ -201,7 +201,7 @@ bool declRefCheck(ASTContext *context,
   }
 
   if (isa<ParmVarDecl>(rhsDecl)) {
-	// if rhs is a parameter, is always ok
+    // if rhs is a parameter, is always ok
     return true;
   }
 
@@ -263,8 +263,8 @@ bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
 }
 
 bool canArgumentGenerateOutput(QualType out, QualType arg) {
-  //out.dump();
-  //arg.dump();
+  // out.dump();
+  // arg.dump();
   assert(out.isCanonical());
   assert(arg.isCanonical());
 
@@ -286,19 +286,18 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
   if (!t2arg)
     return false;
 
-  //assume non builtins, can generate any kind of naked pointers
+  // assume non builtins, can generate any kind of naked pointers
   if (!t2arg->isBuiltinType())
     return true;
 
   if (t2arg != t2)
     return false;
   else {
-    //qt2.dump();
-    //qt2arg.dump();
+    // qt2.dump();
+    // qt2arg.dump();
     return qt2.isAtLeastAsQualifiedAs(qt2arg);
   }
 }
-
 
 /*
 bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
@@ -306,7 +305,8 @@ bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
 
 //  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
 
-  if (isParentCompStmt(Result.Context, m) || isParentVarDecl(Result.Context, m)) {
+  if (isParentCompStmt(Result.Context, m) || isParentVarDecl(Result.Context, m))
+{
     // this is ok
     return;
 
@@ -324,8 +324,8 @@ bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
           auto args = m->arguments();
           for (auto it = args.begin(); it != args.end(); ++it) {
             const auto *rhs = (*it)->IgnoreParenImpCasts();
-            if (isa<CXXNullPtrLiteralExpr>(rhs) || isa<CXXDefaultArgExpr>(rhs)) {
-              ; // nothing to do
+            if (isa<CXXNullPtrLiteralExpr>(rhs) || isa<CXXDefaultArgExpr>(rhs))
+{ ; // nothing to do
             }
             else if (isa<DeclRefExpr>(rhs)) {
 
@@ -344,7 +344,7 @@ bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
             } else {
               ok = false;
               diag(rhs->getExprLoc(), "Couln't verify argument");
-			}
+                        }
           }
           return;
         }

@@ -23,6 +23,7 @@ namespace nodecpp {
 
 bool isOwnerName(const std::string &Name);
 bool isSafeName(const std::string &Name);
+bool hasNodeCppAttr(const VarDecl* Decl);
 
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
                      unsigned NakedPtrLevel);

@@ -279,6 +279,8 @@ TEST(NodeCppModuleTest, NoCastCheck) {
       "int main() { size_t i; auto r = (void*)i; }"));
   EXPECT_FALSE(checkCode<nodecpp::NoCastCheck>(
       "int main() { void* p; auto r = static_cast<size_t*>(p); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NoCastCheck>(
+      "int main() { ((void) 0); }"));
 }
 
 TEST(NodeCppModuleTest, PtrArithmeticCheck) {

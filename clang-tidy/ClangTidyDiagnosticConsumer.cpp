@@ -190,7 +190,7 @@ ClangTidyContext::~ClangTidyContext() = default;
 DiagnosticBuilder ClangTidyContext::diag(
     StringRef CheckName, SourceLocation Loc, StringRef Description,
     DiagnosticIDs::Level Level /* = DiagnosticIDs::Warning*/) {
-  assert(Loc.isValid());
+//  assert(Loc.isValid());
   unsigned ID = DiagEngine->getDiagnosticIDs()->getCustomDiagID(
       Level, (Description + " [" + CheckName + "]").str());
   CheckNamesByDiagnosticID.try_emplace(ID, CheckName);

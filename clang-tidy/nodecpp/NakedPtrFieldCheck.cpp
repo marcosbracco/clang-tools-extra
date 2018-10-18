@@ -33,7 +33,8 @@ void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(varDecl(unless(isExpansionInSystemHeader()),
                                  unless(isImplicit()),
-                             unless(hasParent(cxxConstructorDecl())))
+                             unless(hasParent(cxxConstructorDecl(anyOf(isImplicit(), isDefaulted(), isDeleted())))),
+              unless(hasParent(cxxMethodDecl(anyOf(isImplicit(), isDefaulted(), isDeleted())))))
                          .bind("var"),
                      this);
   //Finder->addMatcher(fieldDecl(hasType(
@@ -50,13 +51,13 @@ void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (M) {
     // TODO improve
-    if (!M->getLocation().isValid() && !M->getTypeSpecStartLoc().isValid())
-      return;
 
-	M->dumpColor();
-    auto loc = M->getTypeSpecStartLoc().isValid() ? M->getTypeSpecStartLoc()
-                                                  : M->getLocation();
-    if (!checkTypeAsStackSafe(this, M->getType(), loc)) {
+	if (hasNodeCppAttr(M)) {
+      diag(M->getLocation(), "found attribute");
+	}
+
+
+    if (!checkTypeAsStackSafe(this, M->getType(), M->getTypeSpecStartLoc())) {
 		//Diag is already printed
 //      M->dumpColor();
 //      diag(M->getLocation(), "declaration with naked pointer");

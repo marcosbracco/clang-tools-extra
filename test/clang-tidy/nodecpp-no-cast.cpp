@@ -18,3 +18,8 @@ void bad3() {
 	auto r = static_cast<size_t*>(p);
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
 }
+
+void good1() {
+	((void) 0); //ok, definition of assert macro
+
+}

@@ -24,7 +24,11 @@ void NoCastCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(cxxReinterpretCastExpr().bind("cast"), this);
 
   Finder->addMatcher(
-      cStyleCastExpr(unless(isInTemplateInstantiation())).bind("cast"), this);
+      cStyleCastExpr(
+          unless(allOf(hasDestinationType(voidType()),
+                       hasSourceExpression(integerLiteral(equals(0))))))
+          .bind("cast"),
+      this);
 }
 
 void NoCastCheck::check(const MatchFinder::MatchResult &Result) {
