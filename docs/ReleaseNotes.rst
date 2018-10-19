@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-may-extend-lambda
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-may-extend-lambda.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-naked-ptr-from-operator
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-from-operator.html>`_ check
 

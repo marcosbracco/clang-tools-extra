@@ -253,7 +253,7 @@ TEST(NodeCppModuleTest, NewExprCheck) {
   EXPECT_FALSE(checkCode<nodecpp::NewExprCheck>(
       bad + "int main() { unique_ptr p; p.reset(new int); }"));
 
-  std::string good = "namespace nodecpp {\n"
+  std::string good = "namespace std {\n"
                      "    template<class T>\n"
                      "    class unique_ptr {\n"
                      "    public:\n"
@@ -264,12 +264,12 @@ TEST(NodeCppModuleTest, NewExprCheck) {
                      "}\n";
 
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good + "int main() { nodecpp::unique_ptr<int> p(new int); }"));
+      good + "int main() { std::unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
       good +
-      "using namespace nodecpp; int main() { unique_ptr<int> p(new int); }"));
+      "using namespace std; int main() { unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good + "int main() { nodecpp::unique_ptr<int> p; p.reset(new int); }"));
+      good + "int main() { std::unique_ptr<int> p; p.reset(new int); }"));
 }
 
 TEST(NodeCppModuleTest, NoCastCheck) {

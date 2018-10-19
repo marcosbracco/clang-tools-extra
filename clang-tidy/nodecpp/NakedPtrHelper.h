@@ -23,7 +23,7 @@ namespace nodecpp {
 
 bool isOwnerName(const std::string &Name);
 bool isSafeName(const std::string &Name);
-bool hasNodeCppAttr(const VarDecl* Decl);
+bool isUnsafeName(const std::string &Name);
 
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
                      unsigned NakedPtrLevel);
@@ -40,8 +40,19 @@ inline bool checkTypeAsStackSafe(ClangTidyCheck *Check, QualType Qt,
   return checkTypeAsSafe(Check, Qt, Sl, 1);
 }
 
+inline bool isTypeHeapSafe(ClangTidyCheck *Check, QualType Qt,
+                           SourceLocation Sl) {
+  return checkTypeAsSafe(Check, Qt, Sl, 0);
+}
+
+bool isSafeRecord(const CXXRecordDecl *decl);
+bool isSafeType(QualType qt);
+
+inline bool isNoInstanceType(QualType qt) { return false; } //TODO
+
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr);
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
+const Expr *ignoreTemporaries(const Expr *expr);
 bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr);
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
@@ -53,29 +64,24 @@ bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
 
 bool canArgumentGenerateOutput(QualType out, QualType arg);
 
-
 class matcher_HeapSafeTypeMatcher
-      : public ::clang::ast_matchers::internal::MatcherInterface<Type> {
-  public:
+    : public ::clang::ast_matchers::internal::MatcherInterface<Type> {
+public:
   explicit matcher_HeapSafeTypeMatcher() = default;
-    bool matches(const Type &Node,
+  bool matches(const Type &Node,
                ::clang::ast_matchers::internal::ASTMatchFinder *Finder,
                ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder)
       const override;
 };
-inline ::clang::ast_matchers::internal::Matcher<Type> heapSafeType() {      
-    return ::clang::ast_matchers::internal::makeMatcher(                       
-        new matcher_HeapSafeTypeMatcher());                     
-  }                                                                            
-  inline bool matcher_HeapSafeTypeMatcher::matches(             
-      const Type &Node,                                                        
-      ::clang::ast_matchers::internal::ASTMatchFinder *Finder,                 
-      ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder) const {
-    return false;
-	  }
-
-
-
+inline ::clang::ast_matchers::internal::Matcher<Type> heapSafeType() {
+  return ::clang::ast_matchers::internal::makeMatcher(
+      new matcher_HeapSafeTypeMatcher());
+}
+inline bool matcher_HeapSafeTypeMatcher::matches(
+    const Type &Node, ::clang::ast_matchers::internal::ASTMatchFinder *Finder,
+    ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder) const {
+  return false;
+}
 
 } // namespace nodecpp
 } // namespace tidy

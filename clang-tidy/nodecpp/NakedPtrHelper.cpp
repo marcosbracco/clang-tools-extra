@@ -25,24 +25,11 @@ bool isSafeName(const std::string &Name) {
          Name == "nodecpp::net::SocketTBase";
 }
 
-bool hasNodeCppAttr(const VarDecl *Decl) {
-  if (!Decl) {
-    return false;
-  }
-
-	const Type* T = Decl->getType().getCanonicalType().getTypePtrOrNull();
-  if (!T) {
-	  return false;
-  }
-
-  T->dump();
-  auto Rd = T->getAsCXXRecordDecl();
-  if (!Rd)
-    return false;
-
-	return Rd->hasAttr<NodeCppMayExtendAttr>() ||
-         Rd->hasAttr<NodeCppNoInstanceAttr>();
+bool isUnsafeName(const std::string &Name) {
+	//nothing here yet
+  return false;
 }
+
 
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
                      unsigned NakedPtrLevel) {
@@ -78,7 +65,7 @@ bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
     // we will take care at instantiation
     return true;
   } else {
-    Ft->dump();
+    //Ft->dump();
     Check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
     return false;
   }
@@ -91,11 +78,12 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
     return false;
   }
 
-  auto Name = Decl->getQualifiedNameAsString();
-  if (isSafeName(Name)) {
-    // this is a well known class,
+  // first verify if is a well known class,
+  auto name = Decl->getQualifiedNameAsString();
+  if (isSafeName(name))
     return true;
-  }
+  else if (isUnsafeName(name))
+    return false;
 
   auto F = Decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
@@ -123,6 +111,64 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   // finally we are safe!
   return true;
 }
+
+
+bool isSafeRecord(const CXXRecordDecl *decl) {
+
+  if (!decl) {
+    return false;
+  }
+
+  // first verify if is a well known class,
+  auto name = decl->getQualifiedNameAsString();
+  if (isSafeName(name))
+    return true;
+  else if (isUnsafeName(name))
+    return false;
+
+
+  auto F = decl->fields();
+  for (auto It = F.begin(); It != F.end(); ++It) {
+
+    if (!isSafeType((*It)->getType()))
+      return false;
+  }
+
+  auto B = decl->bases();
+  for (auto It = B.begin(); It != B.end(); ++It) {
+
+    if (!isSafeType((*It).getType()))
+      return false;
+  }
+
+  // finally we are safe!
+  return true;
+}
+
+
+bool isSafeType(QualType qt) {
+
+  auto t = qt.getCanonicalType().getTypePtrOrNull();
+  if (!t) {
+	// this is a problem with the type, not our problem yet
+	  // came back again when code builds without errors
+    return true; 
+  } else if (t->isReferenceType() || t->isPointerType()) {
+      return false;
+  } else if (t->isBuiltinType()) {
+    return true;
+  } else if (t->isRecordType()) {
+    return isSafeRecord(t->getAsCXXRecordDecl());
+  } else if (t->isTemplateTypeParmType()) {
+    // we will take care at instantiation
+    return true;
+  } else {
+    //t->dump();
+    return false;
+  }
+}
+
+
 
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
 
@@ -155,6 +201,22 @@ const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
   else
     return sIt->get<Expr>();
 }
+
+const Expr *ignoreTemporaries(const Expr *expr) {
+  if (auto b = dyn_cast<CXXBindTemporaryExpr>(expr)) {
+    return ignoreTemporaries(b->getSubExpr());
+  }else if (auto c = dyn_cast<CXXConstructExpr>(expr)) {
+    return ignoreTemporaries(c->getArg(0));
+  } else if (auto t = dyn_cast<MaterializeTemporaryExpr>(expr)) {
+    return ignoreTemporaries(t->GetTemporaryExpr());
+  } else if (auto i = dyn_cast<ImplicitCastExpr>(expr)) {
+    return ignoreTemporaries(i->getSubExpr());
+  } else if (auto cl = dyn_cast<ExprWithCleanups>(expr)) {
+    return ignoreTemporaries(cl->getSubExpr());
+  } else {
+	  return expr;
+  }
+} // namespace nodecpp
 
 bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr) {
   auto sList = context->getParents(*expr);
@@ -355,6 +417,6 @@ bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
 }
 */
 
-} // namespace nodecpp
 } // namespace tidy
+} // namespace clang
 } // namespace clang

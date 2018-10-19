@@ -31,10 +31,12 @@ void NakedPtrFieldCheck::registerMatchers(MatchFinder *Finder) {
   //        .bind("decl"),
   //    this);
 
-  Finder->addMatcher(varDecl(unless(isExpansionInSystemHeader()),
-                                 unless(isImplicit()),
-                             unless(hasParent(cxxConstructorDecl(anyOf(isImplicit(), isDefaulted(), isDeleted())))),
-              unless(hasParent(cxxMethodDecl(anyOf(isImplicit(), isDefaulted(), isDeleted())))))
+  Finder->addMatcher(varDecl(/*unless(isExpansionInSystemHeader()),*/
+//                                 unless(isImplicit()),
+                             unless(hasParent(cxxConstructorDecl())),
+          unless(hasParent(cxxMethodDecl(isCopyAssignmentOperator(), isDeleted()))),
+              unless(hasParent(
+                  cxxMethodDecl(isMoveAssignmentOperator(), isDeleted()))))
                          .bind("var"),
                      this);
   //Finder->addMatcher(fieldDecl(hasType(
@@ -52,9 +54,9 @@ void NakedPtrFieldCheck::check(const MatchFinder::MatchResult &Result) {
   if (M) {
     // TODO improve
 
-	if (hasNodeCppAttr(M)) {
-      diag(M->getLocation(), "found attribute");
-	}
+	//if (hasNodeCppAttr(M)) {
+ //     diag(M->getLocation(), "found attribute");
+	//}
 
 
     if (!checkTypeAsStackSafe(this, M->getType(), M->getTypeSpecStartLoc())) {

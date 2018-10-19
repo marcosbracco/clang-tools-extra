@@ -30,6 +30,7 @@ void NakedPtrAssignmentCheck::registerMatchers(MatchFinder *Finder) {
 void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
+
   const auto *lhs = dyn_cast<DeclRefExpr>(expr->getLHS());
   if (lhs) {
     const auto *lhsDecl = lhs->getDecl();

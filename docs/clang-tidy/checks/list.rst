@@ -176,6 +176,7 @@ Clang-Tidy Checks
    mpi-buffer-deref
    mpi-type-mismatch
    nodecpp-array-type
+   nodecpp-may-extend-lambda
    nodecpp-naked-ptr-assignment
    nodecpp-naked-ptr-field-func
    nodecpp-naked-ptr-field
