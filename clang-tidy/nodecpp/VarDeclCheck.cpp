@@ -33,12 +33,32 @@ void VarDeclCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(varDecl().bind("var"), this);
 }
 
+const CXXMethodDecl *VarDeclCheck::getParentMethod(ASTContext *context, const VarDecl *var) {
+
+  auto sList = context->getParents(*var);
+
+  for(auto sIt = sList.begin(); sIt != sList.end(); ++sIt) {
+    if(auto t = sIt->get<TypeLoc>()) {
+      auto sList2 = context->getParents(*t);
+      for(auto sIt2 = sList2.begin(); sIt2 != sList2.end(); ++sIt2) {
+        if (auto d = sIt2->get<CXXMethodDecl>())
+          return d;
+      }
+    }
+    else if (auto d = sIt->get<CXXMethodDecl>())
+      return d;
+  }
+
+  return nullptr;
+}
+
+
 void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto var = Result.Nodes.getNodeAs<VarDecl>("var");
   assert(var);
 
-  auto p = getParentDecl(Result.Context, var);
+  auto p = getParentMethod(Result.Context, var);
   if(p) {
     if(isa<CXXConstructorDecl>(p))
       return;

@@ -44,16 +44,17 @@ bool isStackOnlyType(QualType qt);
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);
 
-inline bool isNoInstanceType(QualType qt) { return false; } //TODO
-
 const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr);
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
 const Expr *ignoreTemporaries(const Expr *expr);
 bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr);
 
-const Decl *getParentDecl(ASTContext *context, const Decl *decl);
-
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
+bool checkStack2StackAssignment(ASTContext *context, const Stmt* to, const Stmt* from);
+const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl);
+
+
+
 bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
                    const Expr *arg);
 
@@ -62,6 +63,26 @@ bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
 
 bool canArgumentGenerateOutput(QualType out, QualType arg);
 
+
+class NakedPtrScopeChecker {
+  ClangTidyCheck *check; // to write diag messages
+  ASTContext *context;
+
+  enum OutputScope { Stack, Param, This, Global };
+
+  OutputScope outScope;
+  const DeclStmt* outScopeStmt; //only when outScope == Stack
+
+  NakedPtrScopeChecker(ClangTidyCheck *check, ASTContext *context, OutputScope outScope, const DeclStmt* outScopeStmt) :
+  check(check), context(context), outScope(outScope), outScopeStmt(outScopeStmt) {}
+
+
+  bool checkInputExpr(const Expr *from);
+
+
+};
+
+/*
 class matcher_HeapSafeTypeMatcher
     : public ::clang::ast_matchers::internal::MatcherInterface<Type> {
 public:
@@ -80,6 +101,8 @@ inline bool matcher_HeapSafeTypeMatcher::matches(
     ::clang::ast_matchers::internal::BoundNodesTreeBuilder *Builder) const {
   return false;
 }
+*/
+
 
 } // namespace nodecpp
 } // namespace tidy

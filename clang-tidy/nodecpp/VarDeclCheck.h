@@ -25,6 +25,7 @@ public:
   VarDeclCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
+  const CXXMethodDecl *getParentMethod(ASTContext *context, const VarDecl *var);
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
 

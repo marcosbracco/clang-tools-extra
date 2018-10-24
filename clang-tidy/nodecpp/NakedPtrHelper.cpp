@@ -331,25 +331,6 @@ bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr) {
   return false;
 }
 
-const Decl *getParentDecl(ASTContext *context, const Decl *decl) {
-
-  auto sList = context->getParents(*decl);
-
-  for(auto sIt = sList.begin(); sIt != sList.end(); ++sIt) {
-    if(auto t = sIt->get<TypeLoc>()) {
-      auto sList2 = context->getParents(*t);
-      for(auto sIt2 = sList2.begin(); sIt2 != sList2.end(); ++sIt2) {
-        if (auto d = sIt2->get<Decl>())
-          return d;
-      }
-    }
-    if (auto d = sIt->get<Decl>())
-      return d;
-  }
-
-  return nullptr;
-}
-
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 
@@ -359,6 +340,45 @@ const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 
   if (sIt != sList.end())
     return sIt->get<Stmt>();
+  else
+    return nullptr;
+}
+
+bool checkStack2StackAssignment(ASTContext *context, const Stmt* to, const Stmt* from) {
+
+
+  if (!to)
+    return false;
+  
+  if(!from)
+    return false;
+
+  from = getParentStmt(context, from);
+  if (!from)
+    return false;
+
+
+  to = getParentStmt(context, to);
+  while (to) {
+    if (to == from)
+      return true;
+
+    to = getParentStmt(context, to);
+  }
+
+  // we couldn't verify this is ok, assume the worst
+  return false;
+}
+
+const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl) {
+
+  if(!decl)
+    return nullptr;
+
+  auto l = context->getParents(*decl);
+
+  if(l.begin() != l.end())
+    return l.begin()->get<DeclStmt>();
   else
     return nullptr;
 }
@@ -380,40 +400,106 @@ bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
     return true;
   }
 
-  auto lList = context->getParents(*lhsDecl);
-  auto rList = context->getParents(*rhsDecl);
+  auto to = getParentDeclStmt(context, lhsDecl);
+  auto from = getParentDeclStmt(context, rhsDecl);
 
-  auto lIt = lList.begin();
-  auto rIt = rList.begin();
+  return checkStack2StackAssignment(context, to, from);
+}
 
-  if (lIt != lList.end() && rIt != rList.end()) {
+bool NakedPtrScopeChecker::checkInputExpr(const Expr *from) {
 
-    auto lDeclStmt = lIt->get<DeclStmt>();
-    auto rDeclStmt = rIt->get<DeclStmt>();
+  if(!from)
+    return false; // shouln't happend here
 
-    if (lDeclStmt != nullptr && rDeclStmt != nullptr) {
+  from = from->IgnoreParenImpCasts();
+  if(isa<CXXThisExpr>(from)) {
+      switch(outScope) {
+        case Stack:
+        case Param:
+        case This:
+          return true;
+        case Global:
+          return false;
+        default:
+          assert(false);
+          return false;
+      }
+  }
+  else if (auto refExpr = dyn_cast<DeclRefExpr>(from)) {
+    auto fromDecl = refExpr->getDecl();
+    if (!fromDecl) { // shouln't happend here
+      return false;
+    }
 
-      auto rCompStmt = getParentStmt(context, rDeclStmt);
-      if (rCompStmt) {
+    if(isa<FieldDecl>(fromDecl)) {
+      
+      assert(false);
+      return false;
+    }
 
-        auto lCompStmt = getParentStmt(context, lDeclStmt);
+    if (auto param = dyn_cast<ParmVarDecl>(fromDecl)) {
+      // if rhs is a parameter or field, is always ok to assign to stack
+      switch(outScope) {
+        case Stack:
+        case Param:
+          return true;
+        case This:
+          return param->hasAttr<NodeCppMayExtendAttr>();
+        case Global:
+          return false;
+        default:
+          assert(false);
+      }
+    } else if(isa<VarDecl>(fromDecl)) {
+      if(outScope == Stack) {
+        auto stmt = getParentDeclStmt(context, fromDecl);
+        return checkStack2StackAssignment(context, outScopeStmt, stmt);;
+      
+      } else 
+        return false;
+    }
+  } else if(auto member = dyn_cast<MemberExpr>(from)) {
+    //TODO verify only members and not methods will get in here
+    return checkInputExpr(member->getBase());
+  } else if(auto opCallExpr = dyn_cast<CXXOperatorCallExpr>(from)) {
 
-        while (lCompStmt != nullptr) {
+  } else if(auto methodExpr = dyn_cast<CXXMemberCallExpr>(from)) {
 
-          if (lCompStmt == rCompStmt) {
-            //            diag(lhs->getExprLoc(), "this is Ok");
-            return true;
-          }
+  } else if (auto callExpr = dyn_cast<CallExpr>(from)) {
+    auto callDecl = callExpr->getDirectCallee();
+    if (!callDecl) {
+      return false;
+    }
+    auto params = callDecl->parameters();
+    auto ret = callDecl->getReturnType().getCanonicalType();
+    auto args = callExpr->arguments();
 
-          lCompStmt = getParentStmt(context, lCompStmt);
+    auto it = args.begin();
+    auto jt = params.begin();
+    while (it != args.end() && jt != params.end()) {
+      auto arg = (*jt)->getType().getCanonicalType();
+      if (canArgumentGenerateOutput(ret, arg)) {
+        // diag((*it)->getExprLoc(),
+        //     "check this argument");
+
+        if (!checkInputExpr(*it)) {
+          return false;
         }
       }
+      ++it;
+      ++jt;
     }
+    if (it == args.end() && jt == params.end()) {
+      // this is ok!
+      return true;
+    } else
+      return false;
   }
 
-  // we couldn't verify this is ok, assume the worst
+  //just in case
   return false;
 }
+
 
 bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
                    const Expr *arg) {
