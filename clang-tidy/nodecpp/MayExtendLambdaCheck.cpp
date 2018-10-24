@@ -102,17 +102,17 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
     auto p = MatchedDecl->getParamDecl(i);
     if (p->hasAttr<NodeCppMayExtendAttr>()) {
 
-      auto e1 = MatchedExpr->getArg(i);
-      auto e = ignoreTemporaries(e1);
+      auto e = MatchedExpr->getArg(i);
+      e = ignoreTemporaries(e);
       if (auto ref = dyn_cast_or_null<DeclRefExpr>(e)) {
         //diag(e->getExprLoc(), "argument is declRef");
         auto d = ref->getDecl();
         if (d && isa<VarDecl>(d)) {
           auto vd = cast<VarDecl>(d);
           auto e2 = vd->getInit();
-          auto e3 = ignoreTemporaries(e2);
+          e2 = ignoreTemporaries(e2);
 
-          if (auto lamb = dyn_cast_or_null<LambdaExpr>(e3)) {
+          if (auto lamb = dyn_cast_or_null<LambdaExpr>(e2)) {
             //checkLambda(lamb);
             checkLambda2(lamb);
             continue;
@@ -125,7 +125,7 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
         continue;
       }
 	  // e may be null?
-      diag(e1->getExprLoc(), "failed to verify argument");
+    diag(MatchedExpr->getArg(i)->getExprLoc(), "failed to verify argument");
     }
   }
 }

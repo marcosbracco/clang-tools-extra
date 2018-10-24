@@ -23,6 +23,7 @@ namespace nodecpp {
 
 bool isOwnerName(const std::string &Name);
 bool isSafeName(const std::string &Name);
+bool isNakedStructName(const std::string &Name);
 bool isUnsafeName(const std::string &Name);
 
 bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
@@ -30,20 +31,15 @@ bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
 bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
                        unsigned NakedPtrLevel);
 
-inline bool checkRecordAsHeapSafe(ClangTidyCheck *Check,
-                                  const CXXRecordDecl *Decl) {
-  return checkRecordAsSafe(Check, Decl, 0);
-}
 
 inline bool checkTypeAsStackSafe(ClangTidyCheck *Check, QualType Qt,
                                  SourceLocation Sl) {
   return checkTypeAsSafe(Check, Qt, Sl, 1);
 }
 
-inline bool isTypeHeapSafe(ClangTidyCheck *Check, QualType Qt,
-                           SourceLocation Sl) {
-  return checkTypeAsSafe(Check, Qt, Sl, 0);
-}
+
+bool isNakedStructRecord(const CXXRecordDecl *decl);
+bool isStackOnlyType(QualType qt);
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);
@@ -54,6 +50,8 @@ const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr);
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
 const Expr *ignoreTemporaries(const Expr *expr);
 bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr);
+
+const Decl *getParentDecl(ASTContext *context, const Decl *decl);
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
 bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,

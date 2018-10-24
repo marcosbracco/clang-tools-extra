@@ -1,4 +1,5 @@
-//===--- NakedPtrFromFunctionCheck.h - clang-tidy------------------------*- C++ -*-===//
+//===--- NakedPtrFromFunctionCheck.h - clang-tidy------------------------*- C++
+//-*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

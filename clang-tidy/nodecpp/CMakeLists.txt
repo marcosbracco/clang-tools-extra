@@ -6,7 +6,6 @@ add_clang_library(clangTidyNodeCppModule
   NakedPtrHelper.cpp
   ArrayTypeCheck.cpp
   NakedPtrAssignmentCheck.cpp
-  NakedPtrFieldCheck.cpp
   NakedPtrFromFunctionCheck.cpp
   NakedPtrFromMethodCheck.cpp
   NakedPtrFuncCheck.cpp
@@ -15,6 +14,7 @@ add_clang_library(clangTidyNodeCppModule
   NodeCppTidyModule.cpp
   PtrArithmeticCheck.cpp
   StaticStorageCheck.cpp
+  VarDeclCheck.cpp
 
   LINK_LIBS
   clangAST

@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-ptr-field' check was renamed to `nodecpp-var-decl
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-var-decl.html>`_
+
 - New `nodecpp-may-extend-lambda
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-may-extend-lambda.html>`_ check
 

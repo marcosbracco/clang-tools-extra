@@ -25,40 +25,46 @@ bool isSafeName(const std::string &Name) {
          Name == "nodecpp::net::SocketTBase";
 }
 
-bool isUnsafeName(const std::string &Name) {
+bool isNakedStructName(const std::string &Name) {
 	//nothing here yet
   return false;
 }
 
 
-bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
+bool isUnsafeName(const std::string &Name) {
+	//nothing here yet
+  return isNakedStructName(Name);
+}
+
+
+bool checkTypeAsSafe(ClangTidyCheck *check, QualType qt, SourceLocation Sl,
                      unsigned NakedPtrLevel) {
 
-  auto Ft = Qt.getCanonicalType().getTypePtrOrNull();
+  auto Ft = qt.getCanonicalType().getTypePtrOrNull();
   if (!Ft) {
-    Check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
+    check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
     return false;
   } else if (Ft->isReferenceType()) {
     if (NakedPtrLevel == 0) {
-      Check->diag(Sl, "reference type not allowed", DiagnosticIDs::Warning);
+      check->diag(Sl, "reference type not allowed", DiagnosticIDs::Warning);
       return false;
     } else {
-      return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
+      return checkTypeAsSafe(check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
     }
   } else if (Ft->isPointerType()) {
     if (NakedPtrLevel == 0) {
-      Check->diag(Sl, "naked pointer type not allowed", DiagnosticIDs::Warning);
+      check->diag(Sl, "naked pointer type not allowed", DiagnosticIDs::Warning);
       return false;
     } else {
-      return checkTypeAsSafe(Check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
+      return checkTypeAsSafe(check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
     }
   } else if (Ft->isBuiltinType()) {
     return true;
   } else if (Ft->isRecordType()) {
-    if (checkRecordAsSafe(Check, Ft->getAsCXXRecordDecl(), NakedPtrLevel)) {
+    if (checkRecordAsSafe(check, Ft->getAsCXXRecordDecl(), NakedPtrLevel)) {
       return true;
     } else {
-      Check->diag(Sl, "referenced from here", DiagnosticIDs::Note);
+      check->diag(Sl, "referenced from here", DiagnosticIDs::Note);
       return false;
     }
   } else if (Ft->isTemplateTypeParmType()) {
@@ -66,12 +72,12 @@ bool checkTypeAsSafe(ClangTidyCheck *Check, QualType Qt, SourceLocation Sl,
     return true;
   } else {
     //Ft->dump();
-    Check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
+    check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
     return false;
   }
 }
 
-bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
+bool checkRecordAsSafe(ClangTidyCheck *check, const CXXRecordDecl *Decl,
                        unsigned NakedPtrLevel) {
 
   if (!Decl) {
@@ -88,9 +94,9 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   auto F = Decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
 
-    if (!checkTypeAsSafe(Check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
+    if (!checkTypeAsSafe(check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
                          NakedPtrLevel)) {
-      Check->diag((*It)->getTypeSpecStartLoc(), "failed to verify field",
+      check->diag((*It)->getTypeSpecStartLoc(), "failed to verify field",
                   DiagnosticIDs::Note);
       return false;
     }
@@ -100,9 +106,9 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   for (auto It = B.begin(); It != B.end(); ++It) {
     auto Base = *It;
 
-    if (!checkTypeAsSafe(Check, (*It).getType(), (*It).getLocStart(),
+    if (!checkTypeAsSafe(check, (*It).getType(), (*It).getLocStart(),
                          NakedPtrLevel)) {
-      Check->diag(Base.getLocStart(), "failed to verify base",
+      check->diag(Base.getLocStart(), "failed to verify base",
                   DiagnosticIDs::Note);
       return false;
     }
@@ -111,6 +117,93 @@ bool checkRecordAsSafe(ClangTidyCheck *Check, const CXXRecordDecl *Decl,
   // finally we are safe!
   return true;
 }
+
+bool isNakedStructRecord(const CXXRecordDecl *decl) {
+
+  if (!decl) {
+    return false;
+  }
+
+  // first verify if is a well known class,
+  auto name = decl->getQualifiedNameAsString();
+  if (isNakedStructName(name))
+    return true;
+
+
+  auto f = decl->fields();
+  for (auto it = f.begin(); it != f.end(); ++it) {
+
+    auto qt = (*it)->getType(); 
+    if(isSafeType(qt))
+      continue;
+
+    if(isStackOnlyType(qt))
+      continue;
+
+    return false;
+  }
+
+  auto b = decl->bases();
+  if(b.begin() != b.end())
+    return false;//don't allow any bases yet
+
+
+  auto m = decl->methods();
+  for(auto it = m.begin(); it != m.end(); ++it) {
+
+    auto method = *it;
+
+    if(isa<CXXConstructorDecl>(method) || isa<CXXDestructorDecl>(method))
+      continue;
+
+    if(method->isConst())
+      continue;
+
+    if(method->isMoveAssignmentOperator() || method->isCopyAssignmentOperator()) {
+      if(method->isDeleted())
+        continue;
+    }
+    
+    // this is a bad method
+    return false;
+  }
+  // for (auto It = B.begin(); It != B.end(); ++It) {
+  //   auto Base = *It;
+
+  //   if (!checkTypeAsSafe(check, (*It).getType(), (*It).getLocStart(),
+  //                        NakedPtrLevel)) {
+  //     check->diag(Base.getLocStart(), "failed to verify base",
+  //                 DiagnosticIDs::Note);
+  //     return false;
+  //   }
+  // }
+
+  // finally we are safe!
+  return true;
+
+}
+
+
+bool isStackOnlyType(QualType qt) {
+
+  assert(!isSafeType(qt));
+
+  auto t = qt.getCanonicalType().getTypePtrOrNull();
+  if (!t) {
+  	// this is a build problem with the type
+    // not really our problem yet
+    return false; 
+  } 
+  else if (t->isReferenceType() || t->isPointerType()) {
+      return isSafeType(t->getPointeeType());
+  } else if (t->isRecordType()) {
+    return isNakedStructRecord(t->getAsCXXRecordDecl());
+  } else {
+    //t->dump();
+    return false;
+  }
+}
+
 
 
 bool isSafeRecord(const CXXRecordDecl *decl) {
@@ -150,9 +243,9 @@ bool isSafeType(QualType qt) {
 
   auto t = qt.getCanonicalType().getTypePtrOrNull();
   if (!t) {
-	// this is a problem with the type, not our problem yet
-	  // came back again when code builds without errors
-    return true; 
+  	// this is a build problem with the type
+    // not really our problem yet
+    return false; 
   } else if (t->isReferenceType() || t->isPointerType()) {
       return false;
   } else if (t->isBuiltinType()) {
@@ -237,6 +330,26 @@ bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr) {
 
   return false;
 }
+
+const Decl *getParentDecl(ASTContext *context, const Decl *decl) {
+
+  auto sList = context->getParents(*decl);
+
+  for(auto sIt = sList.begin(); sIt != sList.end(); ++sIt) {
+    if(auto t = sIt->get<TypeLoc>()) {
+      auto sList2 = context->getParents(*t);
+      for(auto sIt2 = sList2.begin(); sIt2 != sList2.end(); ++sIt2) {
+        if (auto d = sIt2->get<Decl>())
+          return d;
+      }
+    }
+    if (auto d = sIt->get<Decl>())
+      return d;
+  }
+
+  return nullptr;
+}
+
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 

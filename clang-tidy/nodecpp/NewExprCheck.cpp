@@ -44,11 +44,11 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  if (isNoInstanceType(m->getAllocatedType())) {
-    diag(m->getLocStart(),
-         "type with attribute can be instantiated from safe code");
-    return;
-  }
+  // if (isNoInstanceType(m->getAllocatedType())) {
+  //   diag(m->getLocStart(),
+  //        "type with attribute can be instantiated from safe code");
+  //   return;
+  // }
 
   // type is ok, verify is owned by unique_ptr
 

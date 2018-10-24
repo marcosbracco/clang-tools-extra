@@ -178,8 +178,6 @@ Clang-Tidy Checks
    nodecpp-array-type
    nodecpp-may-extend-lambda
    nodecpp-naked-ptr-assignment
-   nodecpp-naked-ptr-field-func
-   nodecpp-naked-ptr-field
    nodecpp-naked-ptr-from-function
    nodecpp-naked-ptr-from-method
    nodecpp-naked-ptr-from-operator
@@ -187,6 +185,8 @@ Clang-Tidy Checks
    nodecpp-no-cast
    nodecpp-ptr-arithmetic
    nodecpp-static-storage
+   nodecpp-var-decl-func
+   nodecpp-var-decl
    objc-avoid-nserror-init
    objc-avoid-spinlock
    objc-forbidden-subclassing

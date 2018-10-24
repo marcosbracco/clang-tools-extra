@@ -3,7 +3,6 @@
 
 #include "nodecpp/ArrayTypeCheck.h"
 #include "nodecpp/NakedPtrAssignmentCheck.h"
-#include "nodecpp/NakedPtrFieldCheck.h"
 #include "nodecpp/NakedPtrFromFunctionCheck.h"
 #include "nodecpp/NakedPtrFromMethodCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
@@ -11,6 +10,7 @@
 #include "nodecpp/NoCastCheck.h"
 #include "nodecpp/PtrArithmeticCheck.h"
 #include "nodecpp/StaticStorageCheck.h"
+#include "nodecpp/VarDeclCheck.h"
 
 using namespace clang::tidy::nodecpp;
 
@@ -37,6 +37,17 @@ bool checkCode(const std::string &Code,
   return false;
 }
 
+const std::string uniPtr = "namespace std {\n"
+                     "    template<class T>\n"
+                     "    class unique_ptr {\n"
+                     "    public:\n"
+                     "        unique_ptr(){}\n"
+                     "        unique_ptr(T* ptr){}\n"
+                     "        void reset(T* ptr){}\n"
+                     "    };\n"
+                     "}\n";
+
+
 TEST(NodeCppModuleTest, ArrayTypeCheck) {
   EXPECT_FALSE(checkCode<nodecpp::ArrayTypeCheck>("int main() { int i[1]; }"));
 }
@@ -60,37 +71,6 @@ TEST(NodeCppModuleTest, NakedPtrAssignmentCheck) {
 
   EXPECT_FALSE(checkCode<nodecpp::NakedPtrAssignmentCheck>(
       "int main() { int* p1; { int p2; p1 = &p2; } }"));
-}
-
-TEST(NodeCppModuleTest, NakedPtrFieldCheck) {
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>("class Bad { int* i; };\n"
-                                                      "int main() { Bad b; }"));
-
-  std::string good = "namespace nodecpp {\n"
-                     "    template<class T>\n"
-                     "    class unique_ptr {\n"
-                     "      T* t;\n"
-                     "    };\n"
-                     "}\n";
-
-  std::string bad = "template<class T>\n"
-                    "class bad_ptr {\n"
-                    "      T* t;\n"
-                    "    };\n";
-
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
-      good + "int main() { nodecpp::unique_ptr<int> i; }"));
-
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
-      good + "class Good { nodecpp::unique_ptr<int> i; };\n"
-             "int main() { Good g; }"));
-
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
-      bad + "int main() { bad_ptr<int> i; }"));
-
-  EXPECT_TRUE(checkCode<nodecpp::NakedPtrFieldCheck>(
-      bad + "class Bad { bad_ptr<int> i; };\n"
-            "int main() { Bad b; }"));
 }
 
 TEST(NodeCppModuleTest, NakedPtrFromFunctionCheck) {
@@ -264,12 +244,12 @@ TEST(NodeCppModuleTest, NewExprCheck) {
                      "}\n";
 
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good + "int main() { std::unique_ptr<int> p(new int); }"));
+      uniPtr + "int main() { std::unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good +
+      uniPtr +
       "using namespace std; int main() { unique_ptr<int> p(new int); }"));
   EXPECT_TRUE(checkCode<nodecpp::NewExprCheck>(
-      good + "int main() { std::unique_ptr<int> p; p.reset(new int); }"));
+      uniPtr + "int main() { std::unique_ptr<int> p; p.reset(new int); }"));
 }
 
 TEST(NodeCppModuleTest, NoCastCheck) {
@@ -281,6 +261,8 @@ TEST(NodeCppModuleTest, NoCastCheck) {
       "int main() { void* p; auto r = static_cast<size_t*>(p); }"));
   EXPECT_TRUE(checkCode<nodecpp::NoCastCheck>(
       "int main() { ((void) 0); }"));
+  EXPECT_TRUE(checkCode<nodecpp::NoCastCheck>(
+      "void func(int&& i) { int&& j = static_cast<int&&>(i); }"));
 }
 
 TEST(NodeCppModuleTest, PtrArithmeticCheck) {
@@ -319,6 +301,44 @@ TEST(NodeCppModuleTest, StaticStorageCheck) {
       "class Good { static constexpr int good = 5; };"));
   EXPECT_FALSE(
       checkCode<nodecpp::StaticStorageCheck>("class Bad { static int bad; };"));
+}
+
+TEST(NodeCppModuleTest, VarDeclCheck) {
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>("struct Safe1 { int i; };"
+                                               "Safe1 s;"));
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>(
+      uniPtr + "struct Safe1 { int i; };"
+               "struct Safe2 { std::unique_ptr<Safe1> ptr; Safe1 s; };"
+               "Safe2 s;"));
+
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>(
+      uniPtr + "struct Safe1 { int i; };"
+               "struct Safe2 { std::unique_ptr<Safe1> ptr; Safe1 s; };"
+               "std::unique_ptr<Safe2> ptr;"));
+
+  EXPECT_TRUE(
+      checkCode<nodecpp::VarDeclCheck>("struct Safe1 { int i; };"
+                                       "struct Safe2 : public Safe1 { };"
+                                       "Safe2 s;"));
+
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>("struct NakedStr { int* ptr; };"
+                                               "NakedStr naked;"));
+
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>(
+      "struct NakedStr { int* ptr; int* get() const; };"
+      "NakedStr naked;"));
+
+  EXPECT_TRUE(checkCode<nodecpp::VarDeclCheck>("int* ptr;"));
+
+  EXPECT_FALSE(checkCode<nodecpp::VarDeclCheck>("int** ptr;"));
+
+  EXPECT_FALSE(checkCode<nodecpp::VarDeclCheck>(
+      "struct NakedStr { int* ptr; int* get() const; };"
+      "NakedStr* naked;"));
+
+  EXPECT_FALSE(checkCode<nodecpp::VarDeclCheck>(
+      "struct Bad { int* ptr; void set(int* ptr); };"
+      "Bad bad;"));
 }
 
 } // namespace test

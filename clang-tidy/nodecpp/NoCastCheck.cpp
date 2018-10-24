@@ -20,7 +20,7 @@ namespace nodecpp {
 void NoCastCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(cxxConstCastExpr().bind("cast"), this);
-  Finder->addMatcher(cxxStaticCastExpr().bind("cast"), this);
+  Finder->addMatcher(cxxStaticCastExpr(unless(hasDestinationType(rValueReferenceType()))).bind("cast"), this);
   Finder->addMatcher(cxxReinterpretCastExpr().bind("cast"), this);
 
   Finder->addMatcher(
@@ -34,8 +34,8 @@ void NoCastCheck::registerMatchers(MatchFinder *Finder) {
 void NoCastCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *MatchedCast = Result.Nodes.getNodeAs<ExplicitCastExpr>("cast");
-
-  diag(MatchedCast->getLocStart(), "do not use cast");
+  
+  diag(MatchedCast->getExprLoc(), "do not use cast");
 }
 
 } // namespace nodecpp

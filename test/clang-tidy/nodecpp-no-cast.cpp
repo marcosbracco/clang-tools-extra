@@ -3,23 +3,18 @@
 
 void bad1() { 
 	size_t i;
-	auto r = reinterpret_cast<void*>(i);
+	auto r1 = reinterpret_cast<void*>(i);
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
-}
-
-void bad2() {
-	size_t i;
-	auto r = (void*)i;
+	auto r2 = (void*)i;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
-}
-
-void bad3() {
 	void* p;
-	auto r = static_cast<size_t*>(p);
+	auto r3 = static_cast<size_t*>(p);
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+
 }
 
-void good1() {
+void good1(int&& i) {
 	((void) 0); //ok, definition of assert macro
 
+	int&& j = static_cast<int&&>(i); //static cast to rvalue is ok
 }

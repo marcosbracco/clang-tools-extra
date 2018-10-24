@@ -13,7 +13,6 @@
 #include "ArrayTypeCheck.h"
 #include "MayExtendLambdaCheck.h"
 #include "NakedPtrAssignmentCheck.h"
-#include "NakedPtrFieldCheck.h"
 #include "NakedPtrFromFunctionCheck.h"
 #include "NakedPtrFromMethodCheck.h"
 #include "NakedPtrFromOperatorCheck.h"
@@ -22,6 +21,7 @@
 #include "NoCastCheck.h"
 #include "PtrArithmeticCheck.h"
 #include "StaticStorageCheck.h"
+#include "VarDeclCheck.h"
 
 namespace clang {
 namespace tidy {
@@ -37,8 +37,6 @@ public:
         "nodecpp-may-extend-lambda");
     CheckFactories.registerCheck<NakedPtrAssignmentCheck>(
         "nodecpp-naked-ptr-assignment");
-    CheckFactories.registerCheck<NakedPtrFieldCheck>(
-        "nodecpp-naked-ptr-field");
     CheckFactories.registerCheck<NakedPtrFromFunctionCheck>(
         "nodecpp-naked-ptr-from-function");
     CheckFactories.registerCheck<NakedPtrFromMethodCheck>(
@@ -55,6 +53,8 @@ public:
         "nodecpp-ptr-arithmetic");
     CheckFactories.registerCheck<StaticStorageCheck>(
         "nodecpp-static-storage");
+    CheckFactories.registerCheck<VarDeclCheck>(
+        "nodecpp-var-decl");
   }
 };
 
