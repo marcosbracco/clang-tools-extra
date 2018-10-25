@@ -37,87 +37,6 @@ bool isUnsafeName(const std::string &Name) {
 }
 
 
-bool checkTypeAsSafe(ClangTidyCheck *check, QualType qt, SourceLocation Sl,
-                     unsigned NakedPtrLevel) {
-
-  auto Ft = qt.getCanonicalType().getTypePtrOrNull();
-  if (!Ft) {
-    check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
-    return false;
-  } else if (Ft->isReferenceType()) {
-    if (NakedPtrLevel == 0) {
-      check->diag(Sl, "reference type not allowed", DiagnosticIDs::Warning);
-      return false;
-    } else {
-      return checkTypeAsSafe(check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
-    }
-  } else if (Ft->isPointerType()) {
-    if (NakedPtrLevel == 0) {
-      check->diag(Sl, "naked pointer type not allowed", DiagnosticIDs::Warning);
-      return false;
-    } else {
-      return checkTypeAsSafe(check, Ft->getPointeeType(), Sl, --NakedPtrLevel);
-    }
-  } else if (Ft->isBuiltinType()) {
-    return true;
-  } else if (Ft->isRecordType()) {
-    if (checkRecordAsSafe(check, Ft->getAsCXXRecordDecl(), NakedPtrLevel)) {
-      return true;
-    } else {
-      check->diag(Sl, "referenced from here", DiagnosticIDs::Note);
-      return false;
-    }
-  } else if (Ft->isTemplateTypeParmType()) {
-    // we will take care at instantiation
-    return true;
-  } else {
-    //Ft->dump();
-    check->diag(Sl, "failed to verify type safety", DiagnosticIDs::Warning);
-    return false;
-  }
-}
-
-bool checkRecordAsSafe(ClangTidyCheck *check, const CXXRecordDecl *Decl,
-                       unsigned NakedPtrLevel) {
-
-  if (!Decl) {
-    return false;
-  }
-
-  // first verify if is a well known class,
-  auto name = Decl->getQualifiedNameAsString();
-  if (isSafeName(name))
-    return true;
-  else if (isUnsafeName(name))
-    return false;
-
-  auto F = Decl->fields();
-  for (auto It = F.begin(); It != F.end(); ++It) {
-
-    if (!checkTypeAsSafe(check, (*It)->getType(), (*It)->getTypeSpecStartLoc(),
-                         NakedPtrLevel)) {
-      check->diag((*It)->getTypeSpecStartLoc(), "failed to verify field",
-                  DiagnosticIDs::Note);
-      return false;
-    }
-  }
-
-  auto B = Decl->bases();
-  for (auto It = B.begin(); It != B.end(); ++It) {
-    auto Base = *It;
-
-    if (!checkTypeAsSafe(check, (*It).getType(), (*It).getLocStart(),
-                         NakedPtrLevel)) {
-      check->diag(Base.getLocStart(), "failed to verify base",
-                  DiagnosticIDs::Note);
-      return false;
-    }
-  }
-
-  // finally we are safe!
-  return true;
-}
-
 bool isNakedStructRecord(const CXXRecordDecl *decl) {
 
   if (!decl) {
@@ -167,17 +86,7 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
     // this is a bad method
     return false;
   }
-  // for (auto It = B.begin(); It != B.end(); ++It) {
-  //   auto Base = *It;
-
-  //   if (!checkTypeAsSafe(check, (*It).getType(), (*It).getLocStart(),
-  //                        NakedPtrLevel)) {
-  //     check->diag(Base.getLocStart(), "failed to verify base",
-  //                 DiagnosticIDs::Note);
-  //     return false;
-  //   }
-  // }
-
+  
   // finally we are safe!
   return true;
 
@@ -263,20 +172,20 @@ bool isSafeType(QualType qt) {
 
 
 
-const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
+// const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
 
-  auto sList = context->getParents(*expr);
+//   auto sList = context->getParents(*expr);
 
-  auto sIt = sList.begin();
+//   auto sIt = sList.begin();
 
-  if (sIt == sList.end())
-    return nullptr;
+//   if (sIt == sList.end())
+//     return nullptr;
 
-  if (auto p = sIt->get<ParenExpr>())
-    return getParentBinOp(context, p);
-  else
-    return sIt->get<BinaryOperator>();
-}
+//   if (auto p = sIt->get<ParenExpr>())
+//     return getParentBinOp(context, p);
+//   else
+//     return sIt->get<BinaryOperator>();
+// }
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
 
@@ -310,26 +219,6 @@ const Expr *ignoreTemporaries(const Expr *expr) {
 	  return expr;
   }
 } // namespace nodecpp
-
-bool isParentVarDeclOrCompStmtOrReturn(ASTContext *context, const Expr *expr) {
-  auto sList = context->getParents(*expr);
-
-  auto sIt = sList.begin();
-
-  if (sIt != sList.end()) {
-    if (sIt->get<VarDecl>() != nullptr)
-      return true;
-    else if (sIt->get<CompoundStmt>() != nullptr)
-      return true;
-    else if (sIt->get<ReturnStmt>() != nullptr)
-      return true;
-    else if (sIt->get<ImplicitCastExpr>() != nullptr)
-      return isParentVarDeclOrCompStmtOrReturn(context,
-                                               sIt->get<ImplicitCastExpr>());
-  }
-
-  return false;
-}
 
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
@@ -383,28 +272,43 @@ const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl) {
     return nullptr;
 }
 
-bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
-                  const DeclRefExpr *rhs) {
-  const auto *lhsDecl = lhs->getDecl();
-  if (!lhsDecl) { // shouln't happend here
-    return false;
-  }
+bool canArgumentGenerateOutput(QualType out, QualType arg) {
+  // out.dump();
+  // arg.dump();
+  assert(out.isCanonical());
+  assert(arg.isCanonical());
 
-  const auto *rhsDecl = rhs->getDecl();
-  if (!rhsDecl) { // shouln't happend here
+  const Type *t = out.getTypePtrOrNull();
+  if (!t || !t->isPointerType())
     return false;
-  }
 
-  if (isa<ParmVarDecl>(rhsDecl)) {
-    // if rhs is a parameter, is always ok
+  auto qt2 = t->getPointeeType();
+  const Type *t2 = qt2.getTypePtrOrNull();
+  if (!t2)
+    return false;
+
+  const Type *targ = arg.getTypePtrOrNull();
+  if (!(targ && (targ->isPointerType() || targ->isReferenceType())))
+    return false;
+
+  auto qt2arg = targ->getPointeeType();
+  const Type *t2arg = qt2arg.getTypePtrOrNull();
+  if (!t2arg)
+    return false;
+
+  // assume non builtins, can generate any kind of naked pointers
+  if (!t2arg->isBuiltinType())
     return true;
+
+  if (t2arg != t2)
+    return false;
+  else {
+    // qt2.dump();
+    // qt2arg.dump();
+    return qt2.isAtLeastAsQualifiedAs(qt2arg);
   }
-
-  auto to = getParentDeclStmt(context, lhsDecl);
-  auto from = getParentDeclStmt(context, rhsDecl);
-
-  return checkStack2StackAssignment(context, to, from);
 }
+
 
 bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
   auto fromDecl = declRef->getDecl();
@@ -514,6 +418,10 @@ bool NakedPtrScopeChecker::checkCallExpr(const CallExpr *call) {
 
 bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
 
+  if(outScope == Unknown) {
+    return false;
+  }
+
   if(!from) { // shouln't happend here
     assert(false);
     return false;
@@ -559,75 +467,16 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
 }
 
 
-bool checkArgument(ASTContext *context, const DeclRefExpr *lhs,
-                   const Expr *arg) {
-
-  arg = arg->IgnoreParenImpCasts();
-  if (isa<CXXNullPtrLiteralExpr>(arg) || isa<CXXDefaultArgExpr>(arg)) {
-    return true; // nothing to do
-  } else if (isa<DeclRefExpr>(arg)) {
-    return declRefCheck(context, lhs, dyn_cast<DeclRefExpr>(arg));
-
-  } else if (isa<UnaryOperator>(arg)) {
-    const auto *rhsOp = dyn_cast<UnaryOperator>(arg);
-    if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-      const auto *sub = rhsOp->getSubExpr()->IgnoreParenImpCasts();
-      if (isa<DeclRefExpr>(sub)) {
-        return declRefCheck(context, lhs, dyn_cast<DeclRefExpr>(sub));
-      }
-    }
-  }
-
-  return false;
-}
-
-bool canArgumentGenerateOutput(QualType out, QualType arg) {
-  // out.dump();
-  // arg.dump();
-  assert(out.isCanonical());
-  assert(arg.isCanonical());
-
-  const Type *t = out.getTypePtrOrNull();
-  if (!t || !t->isPointerType())
-    return false;
-
-  auto qt2 = t->getPointeeType();
-  const Type *t2 = qt2.getTypePtrOrNull();
-  if (!t2)
-    return false;
-
-  const Type *targ = arg.getTypePtrOrNull();
-  if (!(targ && (targ->isPointerType() || targ->isReferenceType())))
-    return false;
-
-  auto qt2arg = targ->getPointeeType();
-  const Type *t2arg = qt2arg.getTypePtrOrNull();
-  if (!t2arg)
-    return false;
-
-  // assume non builtins, can generate any kind of naked pointers
-  if (!t2arg->isBuiltinType())
-    return true;
-
-  if (t2arg != t2)
-    return false;
-  else {
-    // qt2.dump();
-    // qt2arg.dump();
-    return qt2.isAtLeastAsQualifiedAs(qt2arg);
-  }
-}
-
 /* static */
-std::pair<NakedPtrScopeChecker::OutputScope, const DeclStmt *>
-NakedPtrScopeChecker::calculateScope(ASTContext *context, const Expr *expr) {
+std::pair<NakedPtrScopeChecker::OutputScope, const Decl*>
+NakedPtrScopeChecker::calculateScope(const Expr *expr) {
 
   assert(expr);
 
   if (auto declRef = dyn_cast<DeclRefExpr>(expr)) {
     auto decl = declRef->getDecl();
     if (!decl) { // shouldn't happend here
-      return std::make_pair(Global, nullptr);
+      return std::make_pair(Unknown, nullptr);
     }
 
     if (auto parmVar = dyn_cast<ParmVarDecl>(decl)) {
@@ -640,22 +489,52 @@ NakedPtrScopeChecker::calculateScope(ASTContext *context, const Expr *expr) {
 
       expr->dumpColor();
       assert(false);
-      return std::make_pair(Global, nullptr);
+      return std::make_pair(Unknown, nullptr);
     } else if (auto var = dyn_cast<VarDecl>(decl)) {
       if (var->hasGlobalStorage())
         return std::make_pair(Global, nullptr);
 
-      auto to = getParentDeclStmt(context, decl);
-      return std::make_pair(Stack, to);
+      return std::make_pair(Stack, decl);
     }
   } else if (auto member = dyn_cast<MemberExpr>(expr)) {
     // TODO verify only members and not methods will get in here
-    return calculateScope(context, member->getBase());
+    return calculateScope(member->getBase());
   } else if (isa<CXXThisExpr>(expr)) {
     return std::make_pair(This, nullptr);
+  } else if (isa<CXXNullPtrLiteralExpr>(expr)) {
+    return std::make_pair(Global, nullptr);
   }
 
-  return std::make_pair(Global, nullptr);
+  return std::make_pair(Unknown, nullptr);
+}
+
+/* static */
+NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
+                                                       ASTContext *context,
+                                                       const Expr *toExpr) {
+
+  auto sc = NakedPtrScopeChecker::calculateScope(toExpr);
+
+  return NakedPtrScopeChecker(check, context, sc.first, sc.second);
+}
+
+/* static */
+bool NakedPtrScopeChecker::hasThisScope(const Expr *expr) {
+  auto sc = NakedPtrScopeChecker::calculateScope(expr);
+
+    switch (sc.first) {
+    case Unknown:
+    case Stack:
+    case Param:
+      return false;
+    case This:
+    case Global:
+      return true;
+    default:
+      assert(false);
+      return false;
+    }
+
 }
 
 } // namespace tidy

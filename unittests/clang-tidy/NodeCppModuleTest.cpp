@@ -3,8 +3,6 @@
 
 #include "nodecpp/ArrayTypeCheck.h"
 #include "nodecpp/NakedPtrAssignmentCheck.h"
-#include "nodecpp/NakedPtrFromFunctionCheck.h"
-#include "nodecpp/NakedPtrFromMethodCheck.h"
 #include "nodecpp/NakedPtrFuncCheck.h"
 #include "nodecpp/NewExprCheck.h"
 #include "nodecpp/NoCastCheck.h"

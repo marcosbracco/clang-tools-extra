@@ -102,6 +102,18 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
     auto p = MatchedDecl->getParamDecl(i);
     if (p->hasAttr<NodeCppMayExtendAttr>()) {
 
+      // auto dt = p->getType().getTypePtrOrNull();
+      // if(!dt)
+      //   continue;
+
+      // if(dt->isRecordType()) {
+      //   auto rDecl = dt->getAsCXXRecordDecl();
+      //   if(!rDecl)
+      //     continue;
+      //   auto name = decl->getQualifiedNameAsString();
+      //   if (name == "std::function") {}
+  
+      // }
       auto e = MatchedExpr->getArg(i);
       e = ignoreTemporaries(e);
       if (auto ref = dyn_cast_or_null<DeclRefExpr>(e)) {

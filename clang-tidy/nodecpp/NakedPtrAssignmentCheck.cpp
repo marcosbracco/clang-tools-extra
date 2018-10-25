@@ -31,45 +31,11 @@ void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
 
-  auto sc = NakedPtrScopeChecker::calculateScope(Result.Context, expr->getLHS());
 
-  NakedPtrScopeChecker checker(this, Result.Context, sc.first, sc.second);
+  auto checker = NakedPtrScopeChecker::makeChecker(this, Result.Context, expr->getLHS());
 
   if(!checker.checkExpr(expr->getRHS()))
     diag(expr->getExprLoc(), "assignment of naked pointer may extend scope");
-  // const auto *lhs = dyn_cast<DeclRefExpr>(expr->getLHS());
-  // if (lhs) {
-  //   const auto *lhsDecl = lhs->getDecl();
-  //   if (!lhsDecl) { // shouldn't happend here
-  //     diag(lhs->getExprLoc(), "couldn't verify naked pointer safety");
-  //     return;
-  //   } else {
-  //     const auto *rhs = expr->getRHS()->IgnoreParenImpCasts();
-  //     if (isa<DeclRefExpr>(rhs)) {
-
-  //       if(!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(rhs)))
-  //         diag(lhs->getExprLoc(), "couldn't verify naked pointer safety");
-
-  //       return;
-
-  //     } else if (isa<UnaryOperator>(rhs)) {
-  //       const auto *rhsOp = dyn_cast<UnaryOperator>(rhs);
-  //       if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-  //         const auto *sub = rhsOp->getSubExpr()->IgnoreParenImpCasts();
-  //         if (isa<DeclRefExpr>(sub)) {
-  //           if(!declRefCheck(Result.Context, lhs, dyn_cast<DeclRefExpr>(sub)))
-  //             diag(lhs->getExprLoc(), "couldn't verify naked pointer safety");
-
-  //           return;
-  //         }
-  //       }
-  //     } else if (isa<CallExpr>(rhs)) {
-	// 	//ok, this case is handled by nodecpp-naked-ptr-from-function
-  //       return;
-	//   }
-  //   }
-  // }
-  // diag(expr->getExprLoc(), "couldn't verify naked pointer safety");
 }
 
 } // namespace nodecpp
