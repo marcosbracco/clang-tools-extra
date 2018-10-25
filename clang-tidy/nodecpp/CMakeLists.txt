@@ -2,12 +2,9 @@ set(LLVM_LINK_COMPONENTS support)
 
 add_clang_library(clangTidyNodeCppModule
   MayExtendLambdaCheck.cpp
-  NakedPtrFromOperatorCheck.cpp
   NakedPtrHelper.cpp
   ArrayTypeCheck.cpp
   NakedPtrAssignmentCheck.cpp
-  NakedPtrFromFunctionCheck.cpp
-  NakedPtrFromMethodCheck.cpp
   NakedPtrFuncCheck.cpp
   NewExprCheck.cpp
   NoCastCheck.cpp

@@ -13,9 +13,6 @@
 #include "ArrayTypeCheck.h"
 #include "MayExtendLambdaCheck.h"
 #include "NakedPtrAssignmentCheck.h"
-#include "NakedPtrFromFunctionCheck.h"
-#include "NakedPtrFromMethodCheck.h"
-#include "NakedPtrFromOperatorCheck.h"
 #include "NakedPtrFuncCheck.h"
 #include "NewExprCheck.h"
 #include "NoCastCheck.h"
@@ -37,12 +34,6 @@ public:
         "nodecpp-may-extend-lambda");
     CheckFactories.registerCheck<NakedPtrAssignmentCheck>(
         "nodecpp-naked-ptr-assignment");
-    CheckFactories.registerCheck<NakedPtrFromFunctionCheck>(
-        "nodecpp-naked-ptr-from-function");
-    CheckFactories.registerCheck<NakedPtrFromMethodCheck>(
-        "nodecpp-naked-ptr-from-method");
-    CheckFactories.registerCheck<NakedPtrFromOperatorCheck>(
-        "nodecpp-naked-ptr-from-operator");
     CheckFactories.registerCheck<NakedPtrFuncCheck>(
         "nodecpp-naked-ptr-func");
     CheckFactories.registerCheck<NewExprCheck>(

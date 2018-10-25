@@ -178,9 +178,6 @@ Clang-Tidy Checks
    nodecpp-array-type
    nodecpp-may-extend-lambda
    nodecpp-naked-ptr-assignment
-   nodecpp-naked-ptr-from-function
-   nodecpp-naked-ptr-from-method
-   nodecpp-naked-ptr-from-operator
    nodecpp-new-expr
    nodecpp-no-cast
    nodecpp-ptr-arithmetic
