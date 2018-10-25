@@ -65,20 +65,26 @@ bool canArgumentGenerateOutput(QualType out, QualType arg);
 
 
 class NakedPtrScopeChecker {
+public:
+  enum OutputScope { Stack, Param, This, Global };
+private:
   ClangTidyCheck *check; // to write diag messages
   ASTContext *context;
 
-  enum OutputScope { Stack, Param, This, Global };
 
   OutputScope outScope;
   const DeclStmt* outScopeStmt; //only when outScope == Stack
-
+public:
   NakedPtrScopeChecker(ClangTidyCheck *check, ASTContext *context, OutputScope outScope, const DeclStmt* outScopeStmt) :
   check(check), context(context), outScope(outScope), outScopeStmt(outScopeStmt) {}
 
 
-  bool checkInputExpr(const Expr *from);
+  bool checkDeclRefExpr(const DeclRefExpr *declRef);
+  bool checkCallExpr(const CallExpr *call);
+  bool checkExpr(const Expr *from);
 
+  static
+  std::pair<OutputScope, const DeclStmt*> calculateScope(ASTContext *context, const Expr* expr);
 
 };
 

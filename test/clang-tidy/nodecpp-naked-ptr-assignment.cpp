@@ -19,7 +19,7 @@ void bad1() {
 	{
 		int* bad;
 		p1 = bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	} 
 }
 
@@ -36,7 +36,7 @@ void bad2() {
 	{
 		int bad;
 		p1 = &bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 }
 

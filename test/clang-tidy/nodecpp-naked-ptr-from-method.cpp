@@ -21,7 +21,7 @@ void f(Some* arg) {
 	{
 		Some sInt;
 		p1 = sInt.get(); //bad instance goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	sp = s.join(sp); //ok
@@ -31,13 +31,13 @@ void f(Some* arg) {
 	{
 		Some sInt;
 		sp = sInt.join(sp); //bad instance goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	{
 		Some* ptrInt;
 		sp = s.join(ptrInt); //bad argument goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 }
 

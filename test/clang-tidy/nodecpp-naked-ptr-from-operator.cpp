@@ -18,12 +18,13 @@ void f() {
 		int i = 0;
 		long l = 0;
 
-		auto f = [&](int* p, long) { return p; };
+		auto f = [](int* p, long) { return p; };
 
-		p1 = f(p1, l); //ok
+		p1 = f(p1, l); //bad lambda goes out of scope
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 
 		p1 = f(&i, l); // bad i goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 
 
 
@@ -31,12 +32,12 @@ void f() {
 		p1 = (s >> p1); //ok function op
 
 		p1 = (s >> &i); // bad function op
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 
 		lp = s >> lp; // ok method op
 
 		lp = s >> &l; // bad method op
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-method]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 
 	}
 }

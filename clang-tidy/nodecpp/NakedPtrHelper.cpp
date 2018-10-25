@@ -406,97 +406,155 @@ bool declRefCheck(ASTContext *context, const DeclRefExpr *lhs,
   return checkStack2StackAssignment(context, to, from);
 }
 
-bool NakedPtrScopeChecker::checkInputExpr(const Expr *from) {
-
-  if(!from)
-    return false; // shouln't happend here
-
-  from = from->IgnoreParenImpCasts();
-  if(isa<CXXThisExpr>(from)) {
-      switch(outScope) {
-        case Stack:
-        case Param:
-        case This:
-          return true;
-        case Global:
-          return false;
-        default:
-          assert(false);
-          return false;
-      }
+bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
+  auto fromDecl = declRef->getDecl();
+  if (!fromDecl) { // shouln't happend here
+    return false;
   }
-  else if (auto refExpr = dyn_cast<DeclRefExpr>(from)) {
-    auto fromDecl = refExpr->getDecl();
-    if (!fromDecl) { // shouln't happend here
+
+  if (isa<FieldDecl>(fromDecl)) {
+    fromDecl->dumpColor();
+    assert(false);
+    return false;
+  } else if (auto paramVar = dyn_cast<ParmVarDecl>(fromDecl)) {
+    switch (outScope) {
+    case Stack:
+    case Param:
+      return true;
+    case This:
+      return paramVar->hasAttr<NodeCppMayExtendAttr>();
+    case Global:
+      return false;
+    default:
+      assert(false);
+    }
+  } else if (auto var = dyn_cast<VarDecl>(fromDecl)) {
+    if (var->hasGlobalStorage())
+      return true;
+    else {
+      if (outScope == Stack) {
+        auto stmt = getParentDeclStmt(context, fromDecl);
+        return checkStack2StackAssignment(context, outScopeStmt, stmt);
+        ;
+      }
+      return false;
+    }
+  }
+
+  return false;
+}
+
+bool NakedPtrScopeChecker::checkCallExpr(const CallExpr *call) {
+
+  if(!call) { // shouln't happend here
+    assert(false);
+    return false;
+  }
+    
+  auto callDecl = call->getDirectCallee();
+  if (!callDecl) {
+    return false;
+  }
+
+  if(isa<CXXMemberCallExpr>(call)) {
+    auto callee = dyn_cast<MemberExpr>(call->getCallee());
+
+    if(!callee) {
+      //can this happend?
       return false;
     }
 
-    if(isa<FieldDecl>(fromDecl)) {
-      
+    if(!checkExpr(callee->getBase())) {
+        return false;
+    }
+  }
+  // TODO check if callee is not the first argument
+
+  auto params = callDecl->parameters();
+  auto ret = callDecl->getReturnType().getCanonicalType();
+  auto args = call->arguments();
+
+  auto it = args.begin();
+  auto jt = params.begin();
+
+  if(isa<CXXOperatorCallExpr>(call) && isa<CXXMethodDecl>(callDecl)) {
+    // this is an instance method operator call
+    // then first argument is actually the instance
+    if (it == args.end()) {
       assert(false);
       return false;
     }
+    if (!checkExpr(*it)) {
+      return false;
+    }
+    ++it;
+  }
 
-    if (auto param = dyn_cast<ParmVarDecl>(fromDecl)) {
-      // if rhs is a parameter or field, is always ok to assign to stack
-      switch(outScope) {
-        case Stack:
-        case Param:
-          return true;
-        case This:
-          return param->hasAttr<NodeCppMayExtendAttr>();
-        case Global:
-          return false;
-        default:
-          assert(false);
-      }
-    } else if(isa<VarDecl>(fromDecl)) {
-      if(outScope == Stack) {
-        auto stmt = getParentDeclStmt(context, fromDecl);
-        return checkStack2StackAssignment(context, outScopeStmt, stmt);;
-      
-      } else 
+  while (it != args.end() && jt != params.end()) {
+    auto arg = (*jt)->getType().getCanonicalType();
+    if (canArgumentGenerateOutput(ret, arg)) {
+      // diag((*it)->getExprLoc(),
+      //     "check this argument");
+
+      if (!checkExpr(*it)) {
         return false;
-    }
-  } else if(auto member = dyn_cast<MemberExpr>(from)) {
-    //TODO verify only members and not methods will get in here
-    return checkInputExpr(member->getBase());
-  } else if(auto opCallExpr = dyn_cast<CXXOperatorCallExpr>(from)) {
-
-  } else if(auto methodExpr = dyn_cast<CXXMemberCallExpr>(from)) {
-
-  } else if (auto callExpr = dyn_cast<CallExpr>(from)) {
-    auto callDecl = callExpr->getDirectCallee();
-    if (!callDecl) {
-      return false;
-    }
-    auto params = callDecl->parameters();
-    auto ret = callDecl->getReturnType().getCanonicalType();
-    auto args = callExpr->arguments();
-
-    auto it = args.begin();
-    auto jt = params.begin();
-    while (it != args.end() && jt != params.end()) {
-      auto arg = (*jt)->getType().getCanonicalType();
-      if (canArgumentGenerateOutput(ret, arg)) {
-        // diag((*it)->getExprLoc(),
-        //     "check this argument");
-
-        if (!checkInputExpr(*it)) {
-          return false;
-        }
       }
-      ++it;
-      ++jt;
     }
-    if (it == args.end() && jt == params.end()) {
-      // this is ok!
+    ++it;
+    ++jt;
+  }
+  if (it != args.end() || jt != params.end()) {
+    //TODO diag
+    return false;
+  }
+
+  // this is ok!
+  return true;
+}
+
+bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
+
+  if(!from) { // shouln't happend here
+    assert(false);
+    return false;
+  }
+
+  from = from->IgnoreParenImpCasts();
+  if (isa<CXXThisExpr>(from)) {
+    switch (outScope) {
+    case Stack:
+    case Param:
+    case This:
       return true;
-    } else
+    case Global:
       return false;
+    default:
+      assert(false);
+      return false;
+    }
+  } else if (isa<CXXNullPtrLiteralExpr>(from)) {
+    return true;
+  } else if (auto declRef = dyn_cast<DeclRefExpr>(from)) {
+    return checkDeclRefExpr(declRef);
+  } else if (auto callExpr = dyn_cast<CallExpr>(from)) {
+    // this will check functions, members and both operators
+    return checkCallExpr(callExpr);
+  } else if (auto member = dyn_cast<MemberExpr>(from)) {
+    // TODO verify only members and not methods will get in here
+    return checkExpr(member->getBase());
+  } else if (auto op = dyn_cast<UnaryOperator>(from)) {
+    if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
+      return checkExpr(op->getSubExpr());
+    }
+
+    from->dumpColor();
+    return false;
+  } else if (auto defArg = dyn_cast<CXXDefaultArgExpr>(from)) {
+    return checkExpr(defArg->getExpr());
   }
 
   //just in case
+  from->dumpColor();
   return false;
 }
 
@@ -560,61 +618,45 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
   }
 }
 
-/*
-bool NakedPtrFromFunctionCheck::check(const MatchFinder::MatchResult &Result) {
-  const auto *m = Result.Nodes.getNodeAs<CallExpr>("call");
+/* static */
+std::pair<NakedPtrScopeChecker::OutputScope, const DeclStmt *>
+NakedPtrScopeChecker::calculateScope(ASTContext *context, const Expr *expr) {
 
-//  diag(m->getLocStart(), "call found here!", DiagnosticIDs::Note);
+  assert(expr);
 
-  if (isParentCompStmt(Result.Context, m) || isParentVarDecl(Result.Context, m))
-{
-    // this is ok
-    return;
-
-  } else {
-    const BinaryOperator *op = getParentBinOp(Result.Context, m);
-    if (op && op->getOpcode() == BinaryOperatorKind::BO_Assign) {
-      const auto *lhs = dyn_cast<DeclRefExpr>(op->getLHS());
-      if (lhs) {
-        const auto *lhsDecl = lhs->getDecl();
-        if (!lhsDecl) { // sema error?
-          diag(lhs->getExprLoc(), "declaration not available");
-          return;
-        } else {
-          bool ok = true;
-          auto args = m->arguments();
-          for (auto it = args.begin(); it != args.end(); ++it) {
-            const auto *rhs = (*it)->IgnoreParenImpCasts();
-            if (isa<CXXNullPtrLiteralExpr>(rhs) || isa<CXXDefaultArgExpr>(rhs))
-{ ; // nothing to do
-            }
-            else if (isa<DeclRefExpr>(rhs)) {
-
-              ok = ok && declRefCheck(Result.Context, lhs,
-                                      dyn_cast<DeclRefExpr>(rhs));
-
-            } else if (isa<UnaryOperator>(rhs)) {
-              const auto *rhsOp = dyn_cast<UnaryOperator>(rhs);
-              if (rhsOp->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-                const auto *sub = rhsOp->getSubExpr()->IgnoreParenImpCasts();
-                if (isa<DeclRefExpr>(sub)) {
-                  ok = ok && declRefCheck(Result.Context, lhs,
-                                          dyn_cast<DeclRefExpr>(sub));
-                }
-              }
-            } else {
-              ok = false;
-              diag(rhs->getExprLoc(), "Couln't verify argument");
-                        }
-          }
-          return;
-        }
-      }
+  if (auto declRef = dyn_cast<DeclRefExpr>(expr)) {
+    auto decl = declRef->getDecl();
+    if (!decl) { // shouldn't happend here
+      return std::make_pair(Global, nullptr);
     }
+
+    if (auto parmVar = dyn_cast<ParmVarDecl>(decl)) {
+
+      if (parmVar->hasAttr<NodeCppMayExtendAttr>())
+        return std::make_pair(This, nullptr);
+      else
+        return std::make_pair(Param, nullptr);
+    } else if (auto field = dyn_cast<FieldDecl>(decl)) {
+
+      expr->dumpColor();
+      assert(false);
+      return std::make_pair(Global, nullptr);
+    } else if (auto var = dyn_cast<VarDecl>(decl)) {
+      if (var->hasGlobalStorage())
+        return std::make_pair(Global, nullptr);
+
+      auto to = getParentDeclStmt(context, decl);
+      return std::make_pair(Stack, to);
+    }
+  } else if (auto member = dyn_cast<MemberExpr>(expr)) {
+    // TODO verify only members and not methods will get in here
+    return calculateScope(context, member->getBase());
+  } else if (isa<CXXThisExpr>(expr)) {
+    return std::make_pair(This, nullptr);
   }
-  diag(m->getLocStart(), "Couln't verify safety of call");
+
+  return std::make_pair(Global, nullptr);
 }
-*/
 
 } // namespace tidy
 } // namespace clang

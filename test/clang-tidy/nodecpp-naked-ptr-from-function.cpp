@@ -38,29 +38,29 @@ void f(int* arg) {
 		p1 = func(arg); // argument are ok
 	}
 
-	int* badp = func(func(p1)); 
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
-	int bad = *(func(p1));
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+	int* goodp = func(func(p1)); 
+
+	int good = *(func(p1));
+
 
 	{
-		int i2;
-		p1 = func(&i2);
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+		int iBad;
+		p1 = func(&iBad); //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	p1 = func2(p1, &i); // both args ok
 
 	{	
-		int i2;
-		p1 = func2(p1, &i2);
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+		int iBad;
+		p1 = func2(p1, &iBad); // bad
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	{	
-		int i2;
-		p1 = func2(&i2, p1);
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+		int iBad;
+		p1 = func2(&iBad, p1); //bad 
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 	{
 		int i; 
@@ -70,13 +70,13 @@ void f(int* arg) {
 	{
 		int i;
 		p1 = func4(i); //bad, worry about ref arg
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	{
 		Some s;
 		p1 = func5(s); //bad, assume Some can return int*
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-ptr-from-function]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	Some* sp;
