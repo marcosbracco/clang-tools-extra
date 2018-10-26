@@ -24,6 +24,8 @@ bool isSafeName(const std::string &Name);
 bool isNakedStructName(const std::string &Name);
 bool isUnsafeName(const std::string &Name);
 
+bool isParamOnlyType(QualType qt);
+
 bool isNakedStructRecord(const CXXRecordDecl *decl);
 bool isStackOnlyType(QualType qt);
 
@@ -67,12 +69,19 @@ public:
 private:
   static
   std::pair<OutputScope, const Decl*> calculateScope(const Expr* expr);
+
+  static
+  std::pair<OutputScope, const Decl*> calculateShorterScope(std::pair<OutputScope, const Decl*> l, std::pair<OutputScope, const Decl*> r);
+
 public:
   static
   NakedPtrScopeChecker makeChecker(ClangTidyCheck *check, ASTContext *context, const Expr* toExpr);
 
   static
   bool hasThisScope(const Expr* expr);
+
+  static
+  bool hasParamScope(const Expr* expr);
 };
 
 

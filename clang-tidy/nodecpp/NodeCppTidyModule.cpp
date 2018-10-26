@@ -14,6 +14,7 @@
 #include "MayExtendLambdaCheck.h"
 #include "NakedPtrAssignmentCheck.h"
 #include "NakedPtrFuncCheck.h"
+#include "NakedPtrReturnCheck.h"
 #include "NewExprCheck.h"
 #include "NoCastCheck.h"
 #include "PtrArithmeticCheck.h"
@@ -36,6 +37,8 @@ public:
         "nodecpp-naked-ptr-assignment");
     CheckFactories.registerCheck<NakedPtrFuncCheck>(
         "nodecpp-naked-ptr-func");
+    CheckFactories.registerCheck<NakedPtrReturnCheck>(
+        "nodecpp-naked-ptr-return");
     CheckFactories.registerCheck<NewExprCheck>(
         "nodecpp-new-expr");
     CheckFactories.registerCheck<NoCastCheck>(

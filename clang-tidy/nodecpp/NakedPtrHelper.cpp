@@ -36,6 +36,32 @@ bool isUnsafeName(const std::string &Name) {
   return isNakedStructName(Name);
 }
 
+bool isParamOnlyType(QualType qt) {
+
+  assert(!isSafeType(qt));
+  assert(!isStackOnlyType(qt));
+
+  auto t = qt.getCanonicalType().getTypePtrOrNull();
+  if (!t) {
+  	// this is a build problem with the type
+    // not really our problem yet
+    return false; 
+  } 
+  else if (t->isReferenceType() || t->isPointerType()) {
+      return false;
+  } else if (t->isRecordType()) {
+    auto decl = t->getAsCXXRecordDecl();
+    if (!decl)
+      return false;
+
+    auto name = decl->getQualifiedNameAsString();
+    if (name == "std::function")
+      return true;
+  }
+  
+  return false;
+}
+
 
 bool isNakedStructRecord(const CXXRecordDecl *decl) {
 
@@ -107,10 +133,10 @@ bool isStackOnlyType(QualType qt) {
       return isSafeType(t->getPointeeType());
   } else if (t->isRecordType()) {
     return isNakedStructRecord(t->getAsCXXRecordDecl());
-  } else {
-    //t->dump();
-    return false;
   }
+  
+    //t->dump();
+  return false;
 }
 
 
@@ -529,11 +555,39 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
     if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
       return calculateScope(op->getSubExpr());
     }
+  } else if (auto op = dyn_cast<ConditionalOperator>(expr)) {
+    auto t = calculateScope(op->getTrueExpr());
+    auto f = calculateScope(op->getFalseExpr());
+    return calculateShorterScope(t, f);
   }
 
   llvm::errs() << "NakedPtrScopeChecker::calculateScope > Unknown\n";
   expr->dumpColor();
   return std::make_pair(Unknown, nullptr);
+}
+
+/* static */
+std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> NakedPtrScopeChecker::calculateShorterScope(std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> l, std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> r) {
+
+  if (l.first == Unknown || r.first == Unknown) {
+    return {Unknown, nullptr};
+  }
+  if(l.first == Stack || r.first == Stack) {
+    //TODO need to find shortets decl
+    return {Unknown, nullptr};
+  }
+
+  if(l.first == Param || r.first == Param) {
+    //TODO need to find shortets decl
+    return {Param, nullptr};
+  }
+
+  if(l.first == This || r.first == This) {
+    //TODO need to find shortets decl
+    return {This, nullptr};
+  }
+
+  return {Global, nullptr};
 }
 
 /* static */
@@ -562,7 +616,25 @@ bool NakedPtrScopeChecker::hasThisScope(const Expr *expr) {
       assert(false);
       return false;
     }
+}
 
+/* static */
+bool NakedPtrScopeChecker::hasParamScope(const Expr *expr) {
+
+  auto sc = NakedPtrScopeChecker::calculateScope(expr);
+
+  switch (sc.first) {
+  case Unknown:
+  case Stack:
+    return false;
+  case Param:
+  case This:
+  case Global:
+    return true;
+  default:
+    assert(false);
+    return false;
+  }
 }
 
 } // namespace tidy

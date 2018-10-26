@@ -75,6 +75,9 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   if(isStackOnlyType(var->getType()))
     return;
 
+  if(isa<ParmVarDecl>(var) && isParamOnlyType(var->getType()))
+    return;
+
   diag(var->getTypeSpecStartLoc(), "unsafe type at variable declaration");
 }
 

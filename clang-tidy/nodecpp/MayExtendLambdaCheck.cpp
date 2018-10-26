@@ -122,7 +122,7 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
         continue;
       }
 	    // e may be null?
-      diag(MatchedExpr->getArg(i)->getExprLoc(), "is not safe to extend argument scope to 'this'");
+      diag(e->getExprLoc(), "is not safe to extend argument scope to 'this'");
     }
   }
 }
