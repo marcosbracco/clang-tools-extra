@@ -27,7 +27,7 @@ void MayExtendLambdaCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
-
+  
   auto caps = lamb->captures();
   for (auto it = caps.begin(); it != caps.end(); ++it) {
     switch (it->getCaptureKind()) {
@@ -40,21 +40,15 @@ void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
       if (isSafeType(d->getType()))
         break;
 
-      auto ptr = d->getType().getCanonicalType().getTypePtrOrNull();
-      if (!ptr)
-        break; // some type error
+      if (d->hasGlobalStorage())
+        break;
 
-      if (!ptr->isPointerType()) {
-        diag(it->getLocation(), "capture type not allowed");
-        break;
-      }
-      auto r = ptr->getPointeeCXXRecordDecl();
-      if (!r->hasAttr<NodeCppNoInstanceAttr>()) {
-        diag(it->getLocation(), "capture pointer type not allowed");
-        break;
+      if (auto parmVar = dyn_cast<ParmVarDecl>(d)) {
+        if(parmVar->hasAttr<NodeCppMayExtendAttr>())
+          break;
       }
 
-      // we are safe
+      diag(it->getLocation(), "unsafe capture to extend scope");
     } break;
     case LCK_ByRef:
       diag(it->getLocation(), "capture by reference not allowed");
@@ -115,8 +109,10 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
   
       // }
       auto e = MatchedExpr->getArg(i);
-      if(auto lamb = getLambda(e)) {
-        checkLambda2(lamb);
+      if(isFunctionPtr(e)) {
+        continue;
+      } else if(auto lamb = getLambda(e)) {
+        checkLambda(lamb);
         continue;
       } else if(NakedPtrScopeChecker::hasThisScope(e)) {
         continue;

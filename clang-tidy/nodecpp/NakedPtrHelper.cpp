@@ -265,6 +265,29 @@ const LambdaExpr *getLambda(const Expr *expr) {
   return nullptr;
 }
 
+bool isFunctionPtr(const Expr *expr) {
+
+  if (!expr)
+    return false;
+
+  auto e = ignoreTemporaries(expr);
+
+  if (auto op = dyn_cast<UnaryOperator>(e)) {
+    if (op->getOpcode() != UnaryOperatorKind::UO_AddrOf)
+      return false;
+
+    e = op->getSubExpr();
+  }
+
+  if (auto ref = dyn_cast<DeclRefExpr>(e)) {
+    return isa<FunctionDecl>(ref->getDecl());
+  }
+
+  return false;
+}
+
+
+
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 
   auto sList = context->getParents(*stmt);
