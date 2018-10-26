@@ -115,29 +115,14 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
   
       // }
       auto e = MatchedExpr->getArg(i);
-      e = ignoreTemporaries(e);
-      if (auto ref = dyn_cast_or_null<DeclRefExpr>(e)) {
-        //diag(e->getExprLoc(), "argument is declRef");
-        auto d = ref->getDecl();
-        if (d && isa<VarDecl>(d)) {
-          auto vd = cast<VarDecl>(d);
-          auto e2 = vd->getInit();
-          e2 = ignoreTemporaries(e2);
-
-          if (auto lamb = dyn_cast_or_null<LambdaExpr>(e2)) {
-            //checkLambda(lamb);
-            checkLambda2(lamb);
-            continue;
-          }
-        }
-      } else if (auto lamb = dyn_cast_or_null<LambdaExpr>(e)) {
-        //diag(e->getExprLoc(), "argument is LambdaExpr");
-        //checkLambda(lamb);
+      if(auto lamb = getLambda(e)) {
         checkLambda2(lamb);
         continue;
+      } else if(NakedPtrScopeChecker::hasThisScope(e)) {
+        continue;
       }
-	  // e may be null?
-    diag(MatchedExpr->getArg(i)->getExprLoc(), "failed to verify argument");
+	    // e may be null?
+      diag(MatchedExpr->getArg(i)->getExprLoc(), "is not safe to extend argument scope to 'this'");
     }
   }
 }

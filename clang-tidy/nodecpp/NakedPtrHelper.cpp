@@ -220,6 +220,24 @@ const Expr *ignoreTemporaries(const Expr *expr) {
   }
 } // namespace nodecpp
 
+const LambdaExpr *getLambda(const Expr *expr) {
+
+  if (!expr)
+    return nullptr;
+
+  auto e = ignoreTemporaries(expr);
+
+  if (auto lamb = dyn_cast<LambdaExpr>(e)) {
+    return lamb;
+  } else if (auto ref = dyn_cast<DeclRefExpr>(e)) {
+    // diag(e->getExprLoc(), "argument is declRef");
+    if (auto d = dyn_cast_or_null<VarDecl>(ref->getDecl())) {
+      return getLambda(d->getInit());
+    }
+  }
+
+  return nullptr;
+}
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
 
@@ -471,8 +489,12 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
 std::pair<NakedPtrScopeChecker::OutputScope, const Decl*>
 NakedPtrScopeChecker::calculateScope(const Expr *expr) {
 
-  assert(expr);
+  if(!expr) {
+    assert(expr);
+    return std::make_pair(Unknown, nullptr);
+  }
 
+  expr = expr->IgnoreParenImpCasts();
   if (auto declRef = dyn_cast<DeclRefExpr>(expr)) {
     auto decl = declRef->getDecl();
     if (!decl) { // shouldn't happend here
@@ -503,8 +525,14 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
     return std::make_pair(This, nullptr);
   } else if (isa<CXXNullPtrLiteralExpr>(expr)) {
     return std::make_pair(Global, nullptr);
+  } else if (auto op = dyn_cast<UnaryOperator>(expr)) {
+    if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
+      return calculateScope(op->getSubExpr());
+    }
   }
 
+  llvm::errs() << "NakedPtrScopeChecker::calculateScope > Unknown\n";
+  expr->dumpColor();
   return std::make_pair(Unknown, nullptr);
 }
 
