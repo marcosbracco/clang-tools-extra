@@ -139,6 +139,44 @@ bool isStackOnlyType(QualType qt) {
   return false;
 }
 
+bool isNakedPointerType(QualType qt){
+
+  assert(!isSafeType(qt));
+
+  auto t = qt.getCanonicalType().getTypePtrOrNull();
+  if (!t) {
+  	// this is a build problem with the type
+    // not really our problem yet
+    return false; 
+  } 
+  
+  if (t->isReferenceType() || t->isPointerType()) {
+      return isSafeType(t->getPointeeType());
+  }
+  
+    //t->dump();
+  return false;
+}
+
+bool isNakedStructType(QualType qt){
+
+  assert(!isSafeType(qt));
+
+  auto t = qt.getCanonicalType().getTypePtrOrNull();
+  if (!t) {
+  	// this is a build problem with the type
+    // not really our problem yet
+    return false; 
+  } 
+
+  if (t->isRecordType()) {
+    return isNakedStructRecord(t->getAsCXXRecordDecl());
+  }
+  
+    //t->dump();
+  return false;
+}
+
 
 
 bool isSafeRecord(const CXXRecordDecl *decl) {
@@ -196,23 +234,6 @@ bool isSafeType(QualType qt) {
   }
 }
 
-
-
-// const BinaryOperator *getParentBinOp(ASTContext *context, const Expr *expr) {
-
-//   auto sList = context->getParents(*expr);
-
-//   auto sIt = sList.begin();
-
-//   if (sIt == sList.end())
-//     return nullptr;
-
-//   if (auto p = sIt->get<ParenExpr>())
-//     return getParentBinOp(context, p);
-//   else
-//     return sIt->get<BinaryOperator>();
-// }
-
 const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
 
   auto sList = context->getParents(*expr);
@@ -246,24 +267,6 @@ const Expr *ignoreTemporaries(const Expr *expr) {
   }
 } // namespace nodecpp
 
-const LambdaExpr *getLambda(const Expr *expr) {
-
-  if (!expr)
-    return nullptr;
-
-  auto e = ignoreTemporaries(expr);
-
-  if (auto lamb = dyn_cast<LambdaExpr>(e)) {
-    return lamb;
-  } else if (auto ref = dyn_cast<DeclRefExpr>(e)) {
-    // diag(e->getExprLoc(), "argument is declRef");
-    if (auto d = dyn_cast_or_null<VarDecl>(ref->getDecl())) {
-      return getLambda(d->getInit());
-    }
-  }
-
-  return nullptr;
-}
 
 bool isFunctionPtr(const Expr *expr) {
 
@@ -300,31 +303,6 @@ const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt) {
     return nullptr;
 }
 
-bool checkStack2StackAssignment(ASTContext *context, const Stmt* to, const Stmt* from) {
-
-
-  if (!to)
-    return false;
-  
-  if(!from)
-    return false;
-
-  from = getParentStmt(context, from);
-  if (!from)
-    return false;
-
-
-  to = getParentStmt(context, to);
-  while (to) {
-    if (to == from)
-      return true;
-
-    to = getParentStmt(context, to);
-  }
-
-  // we couldn't verify this is ok, assume the worst
-  return false;
-}
 
 const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl) {
 
@@ -376,6 +354,36 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
   }
 }
 
+bool NakedPtrScopeChecker::checkStack2StackAssignment(const Decl *fromDecl) {
+
+  if(!context || !outScopeDecl) {
+    check->diag(fromDecl->getLocStart(), "Internal checker error, please report", DiagnosticIDs::Error);
+    return false;
+  }
+  
+  auto fromStmt = getParentDeclStmt(context, fromDecl);
+  if (!fromStmt)
+    return false;
+
+  auto toStmt = getParentDeclStmt(context, outScopeDecl);
+  if (!toStmt)
+    return false;
+
+  auto from = getParentStmt(context, fromStmt);
+  if (!from)
+    return false;
+
+  auto to = getParentStmt(context, toStmt);
+  while (to) {
+    if (to == from)
+      return true;
+
+    to = getParentStmt(context, to);
+  }
+
+  // we couldn't verify this is ok, assume the worst
+  return false;
+}
 
 bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
   auto fromDecl = declRef->getDecl();
@@ -402,11 +410,22 @@ bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
   } else if (auto var = dyn_cast<VarDecl>(fromDecl)) {
     if (var->hasGlobalStorage())
       return true;
+    else if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      switch (outScope) {
+      case Stack:
+      case Param:
+      case This:
+        return true;
+      case Global:
+        return false;
+      default:
+        assert(false);
+        return false;
+      }
+    }
     else {
       if (outScope == Stack) {
-        auto stmt = getParentDeclStmt(context, fromDecl);
-        return checkStack2StackAssignment(context, outScopeStmt, stmt);
-        ;
+        return checkStack2StackAssignment(fromDecl);
       }
       return false;
     }
@@ -526,7 +545,16 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
     return false;
   } else if (auto defArg = dyn_cast<CXXDefaultArgExpr>(from)) {
     return checkExpr(defArg->getExpr());
+  } else if (auto op = dyn_cast<ConditionalOperator>(from)) {
+    //check both branches
+    if(checkExpr(op->getTrueExpr()))
+      return checkExpr(op->getFalseExpr());
+    else    
+      return false;
+  } else if(auto cast = dyn_cast<CastExpr>(from)) {
+    return checkExpr(cast->getSubExpr());
   }
+
 
   //just in case
   from->dumpColor();
@@ -564,7 +592,9 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
     } else if (auto var = dyn_cast<VarDecl>(decl)) {
       if (var->hasGlobalStorage())
         return std::make_pair(Global, nullptr);
-
+      else if(var->hasAttr<NodeCppMayExtendAttr>()) {
+        return std::make_pair(This, nullptr);
+      }
       return std::make_pair(Stack, decl);
     }
   } else if (auto member = dyn_cast<MemberExpr>(expr)) {
@@ -578,10 +608,10 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
     if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
       return calculateScope(op->getSubExpr());
     }
-  } else if (auto op = dyn_cast<ConditionalOperator>(expr)) {
-    auto t = calculateScope(op->getTrueExpr());
-    auto f = calculateScope(op->getFalseExpr());
-    return calculateShorterScope(t, f);
+  // } else if (auto op = dyn_cast<ConditionalOperator>(expr)) {
+  //   auto t = calculateScope(op->getTrueExpr());
+  //   auto f = calculateScope(op->getFalseExpr());
+  //   return calculateShorterScope(t, f);
   }
 
   llvm::errs() << "NakedPtrScopeChecker::calculateScope > Unknown\n";
@@ -589,29 +619,29 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
   return std::make_pair(Unknown, nullptr);
 }
 
-/* static */
-std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> NakedPtrScopeChecker::calculateShorterScope(std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> l, std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> r) {
+// /* static */
+// std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> NakedPtrScopeChecker::calculateShorterScope(std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> l, std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> r) {
 
-  if (l.first == Unknown || r.first == Unknown) {
-    return {Unknown, nullptr};
-  }
-  if(l.first == Stack || r.first == Stack) {
-    //TODO need to find shortets decl
-    return {Unknown, nullptr};
-  }
+//   if (l.first == Unknown || r.first == Unknown) {
+//     return {Unknown, nullptr};
+//   }
+//   if(l.first == Stack || r.first == Stack) {
+//     //TODO need to find shortets decl
+//     return {Unknown, nullptr};
+//   }
 
-  if(l.first == Param || r.first == Param) {
-    //TODO need to find shortets decl
-    return {Param, nullptr};
-  }
+//   if(l.first == Param || r.first == Param) {
+//     //TODO need to find shortets decl
+//     return {Param, nullptr};
+//   }
 
-  if(l.first == This || r.first == This) {
-    //TODO need to find shortets decl
-    return {This, nullptr};
-  }
+//   if(l.first == This || r.first == This) {
+//     //TODO need to find shortets decl
+//     return {This, nullptr};
+//   }
 
-  return {Global, nullptr};
-}
+//   return {Global, nullptr};
+// }
 
 /* static */
 NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
@@ -624,42 +654,14 @@ NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
 }
 
 /* static */
-bool NakedPtrScopeChecker::hasAtLeastThisScope(const Expr *expr) {
-  auto sc = NakedPtrScopeChecker::calculateScope(expr);
+NakedPtrScopeChecker NakedPtrScopeChecker::makeThisScopeChecker(ClangTidyCheck *check) {
 
-    switch (sc.first) {
-    case Unknown:
-    case Stack:
-    case Param:
-      return false;
-    case This:
-    case Global:
-      return true;
-    default:
-      assert(false);
-      return false;
-    }
+  return NakedPtrScopeChecker(check, nullptr, This, nullptr);
 }
-
-
-
 /* static */
-bool NakedPtrScopeChecker::hasParamScope(const Expr *expr) {
+NakedPtrScopeChecker NakedPtrScopeChecker::makeParamScopeChecker(ClangTidyCheck *check) {
 
-  auto sc = NakedPtrScopeChecker::calculateScope(expr);
-
-  switch (sc.first) {
-  case Unknown:
-  case Stack:
-    return false;
-  case Param:
-  case This:
-  case Global:
-    return true;
-  default:
-    assert(false);
-    return false;
-  }
+  return NakedPtrScopeChecker(check, nullptr, Param, nullptr);
 }
 
 } // namespace tidy

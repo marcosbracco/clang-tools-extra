@@ -69,16 +69,48 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     }
   }
 
-  if (isSafeType(var->getType()))
-    return;
-  
-  if(isStackOnlyType(var->getType()))
+  auto qt = var->getType();
+  if (isSafeType(qt))
     return;
 
-  if(isa<ParmVarDecl>(var) && isParamOnlyType(var->getType()))
-    return;
+  if(isa<ParmVarDecl>(var)) {
+    if(isStackOnlyType(qt) || isParamOnlyType(qt))
+      return;
 
-  diag(var->getTypeSpecStartLoc(), "unsafe type at variable declaration");
+    diag(var->getLocation(), "unsafe type at parameter declaration");
+    return;
+  }
+
+  //a variable not a parameter
+  if(isNakedPointerType(qt)) {
+    auto e = var->getInit();
+    if(!e) {
+      diag(var->getLocation(), "Naked pointer type must have initializer");
+      return;
+    }
+
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      //then we must check scope
+      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
+      if(!sc.checkExpr(e)) {
+        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
+        return;
+      }
+    }
+
+    return; //we are ok for naked pointer
+  }
+
+  if(isNakedStructType(qt)) {
+    // check constructor
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
+    }
+    return;
+  }
+
+  diag(var->getLocation(), "unsafe type at variable declaration");
+  return;
 }
 
 } // namespace nodecpp

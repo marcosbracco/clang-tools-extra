@@ -43,10 +43,8 @@ void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
       if (d->hasGlobalStorage())
         break;
 
-      if (auto parmVar = dyn_cast<ParmVarDecl>(d)) {
-        if(parmVar->hasAttr<NodeCppMayExtendAttr>())
-          break;
-      }
+      if(d->hasAttr<NodeCppMayExtendAttr>())
+        break;
 
       diag(it->getLocation(), "unsafe capture to extend scope");
     } break;
@@ -85,6 +83,26 @@ void MayExtendLambdaCheck::checkLambda2(const LambdaExpr *lamb) {
 
     // we are safe continue with next
   }
+}
+
+/* static */
+const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
+
+  if (!expr)
+    return nullptr;
+
+  auto e = ignoreTemporaries(expr);
+
+  if (auto lamb = dyn_cast<LambdaExpr>(e)) {
+    return lamb;
+  } else if (auto ref = dyn_cast<DeclRefExpr>(e)) {
+    // diag(e->getExprLoc(), "argument is declRef");
+    if (auto d = dyn_cast_or_null<VarDecl>(ref->getDecl())) {
+      return getLambda(d->getInit());
+    }
+  }
+
+  return nullptr;
 }
 
 /* static */
@@ -129,26 +147,16 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
     auto p = decl->getParamDecl(i);
     if (p->hasAttr<NodeCppMayExtendAttr>()) {
 
-      // auto dt = p->getType().getTypePtrOrNull();
-      // if(!dt)
-      //   continue;
-
-      // if(dt->isRecordType()) {
-      //   auto rDecl = dt->getAsCXXRecordDecl();
-      //   if(!rDecl)
-      //     continue;
-      //   auto name = decl->getQualifiedNameAsString();
-      //   if (name == "std::function") {}
-  
-      // }
       auto e = call->getArg(i);
       if(isFunctionPtr(e)) {
         continue;
       } else if(auto lamb = getLambda(e)) {
         checkLambda(lamb);
         continue;
-      } else if(NakedPtrScopeChecker::hasAtLeastThisScope(e)) {
-        continue;
+      } else {
+        auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this);
+        if(ch.checkExpr(e))
+          continue;
       }
 	    // e may be null?
       diag(e->getExprLoc(), "is not safe to extend argument scope to 'this'");

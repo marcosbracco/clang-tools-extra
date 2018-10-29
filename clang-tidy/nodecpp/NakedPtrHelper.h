@@ -18,7 +18,6 @@ namespace nodecpp {
 
 /// FIXME: Write a short description.
 ///
-
 bool isOwnerName(const std::string &Name);
 bool isSafeName(const std::string &Name);
 bool isNakedStructName(const std::string &Name);
@@ -28,9 +27,12 @@ bool isParamOnlyType(QualType qt);
 
 bool isNakedStructRecord(const CXXRecordDecl *decl);
 bool isStackOnlyType(QualType qt);
+bool isNakedPointerType(QualType qt);
+bool isNakedStructType(QualType qt);
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);
+
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
 const Expr *ignoreTemporaries(const Expr *expr);
@@ -38,7 +40,6 @@ const LambdaExpr *getLambda(const Expr *expr);
 bool isFunctionPtr(const Expr *expr);
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);
-bool checkStack2StackAssignment(ASTContext *context, const Stmt* to, const Stmt* from);
 const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl);
 
 bool canArgumentGenerateOutput(QualType out, QualType arg);
@@ -53,14 +54,12 @@ class NakedPtrScopeChecker {
 
 
   OutputScope outScope;
-  const DeclStmt* outScopeStmt; //only when outScope == Stack
+  const Decl* outScopeDecl; //only when outScope == Stack
 
   NakedPtrScopeChecker(ClangTidyCheck *check, ASTContext *context, OutputScope outScope, const Decl* outScopeDecl) :
-  check(check), context(context), outScope(outScope)  {
-    if(outScopeDecl)
-      outScopeStmt = getParentDeclStmt(context, outScopeDecl);
-  }
+  check(check), context(context), outScope(outScope), outScopeDecl(outScopeDecl)  {}
 
+  bool checkStack2StackAssignment(const Decl* fromDecl);
 
   bool checkDeclRefExpr(const DeclRefExpr *declRef);
   bool checkCallExpr(const CallExpr *call);
@@ -71,18 +70,16 @@ private:
   static
   std::pair<OutputScope, const Decl*> calculateScope(const Expr* expr);
 
-  static
-  std::pair<OutputScope, const Decl*> calculateShorterScope(std::pair<OutputScope, const Decl*> l, std::pair<OutputScope, const Decl*> r);
+  // static
+  // std::pair<OutputScope, const Decl*> calculateShorterScope(std::pair<OutputScope, const Decl*> l, std::pair<OutputScope, const Decl*> r);
 
 public:
   static
   NakedPtrScopeChecker makeChecker(ClangTidyCheck *check, ASTContext *context, const Expr* toExpr);
-
   static
-  bool hasAtLeastThisScope(const Expr* expr);
-
+  NakedPtrScopeChecker makeThisScopeChecker(ClangTidyCheck *check);
   static
-  bool hasParamScope(const Expr* expr);
+  NakedPtrScopeChecker makeParamScopeChecker(ClangTidyCheck *check);
 };
 
 
