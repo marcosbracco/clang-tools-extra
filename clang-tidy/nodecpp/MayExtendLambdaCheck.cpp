@@ -107,6 +107,13 @@ const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
 
 /* static */
 bool MayExtendLambdaCheck::hasRealLifeAsThis(const Expr* expr) {
+  // here we allow:
+  // this->member.call()
+  // this->member.member.call()
+  // this->call()
+  // may_extend->call()
+  // may_extend->member.call()
+
 
   if(!expr) {
     assert(false);
@@ -120,14 +127,23 @@ bool MayExtendLambdaCheck::hasRealLifeAsThis(const Expr* expr) {
   }
   else if (auto member = dyn_cast<MemberExpr>(expr)) {
     //this is allways 'arrow', so check first
-    if(isa<CXXThisExpr>(member->getBase()))
+    auto base = member->getBase()->IgnoreParenImpCasts();
+    if(isa<CXXThisExpr>(base))
       return true;
+    else if(auto var = dyn_cast<DeclRefExpr>(base)) {
+      auto decl = var->getDecl();
+      if (!decl) { // shouln't happend here
+        return false;
+      }
+
+      return decl->hasAttr<NodeCppMayExtendAttr>();
+    }
 
     if(member->isArrow())
       return false;
 
     return hasRealLifeAsThis(member->getBase());
-  }
+  } 
 
   return false;
 }
