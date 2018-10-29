@@ -47,7 +47,7 @@ bool canArgumentGenerateOutput(QualType out, QualType arg);
 
 class NakedPtrScopeChecker {
 
-  enum OutputScope { Unknown, Stack, Param, This, Global };
+  enum OutputScope { Unknown, Stack, Param, This };
 
   ClangTidyCheck *check; // to write diag messages
   ASTContext *context;

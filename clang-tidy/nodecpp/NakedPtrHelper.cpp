@@ -394,7 +394,6 @@ bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
   if (isa<FieldDecl>(fromDecl)) {
     fromDecl->dumpColor();
     assert(false);
-    return false;
   } else if (auto paramVar = dyn_cast<ParmVarDecl>(fromDecl)) {
     switch (outScope) {
     case Stack:
@@ -402,8 +401,6 @@ bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
       return true;
     case This:
       return paramVar->hasAttr<NodeCppMayExtendAttr>();
-    case Global:
-      return false;
     default:
       assert(false);
     }
@@ -411,17 +408,7 @@ bool NakedPtrScopeChecker::checkDeclRefExpr(const DeclRefExpr *declRef) {
     if (var->hasGlobalStorage())
       return true;
     else if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      switch (outScope) {
-      case Stack:
-      case Param:
-      case This:
-        return true;
-      case Global:
-        return false;
-      default:
-        assert(false);
-        return false;
-      }
+      return true;
     }
     else {
       if (outScope == Stack) {
@@ -520,8 +507,6 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
     case Param:
     case This:
       return true;
-    case Global:
-      return false;
     default:
       assert(false);
       return false;
@@ -566,6 +551,8 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
 std::pair<NakedPtrScopeChecker::OutputScope, const Decl*>
 NakedPtrScopeChecker::calculateScope(const Expr *expr) {
 
+  // Scope is only calculated for the expression acting as lhs
+  // all other expressions are checked againt them
   if(!expr) {
     assert(expr);
     return std::make_pair(Unknown, nullptr);
@@ -590,58 +577,22 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
       assert(false);
       return std::make_pair(Unknown, nullptr);
     } else if (auto var = dyn_cast<VarDecl>(decl)) {
-      if (var->hasGlobalStorage())
-        return std::make_pair(Global, nullptr);
-      else if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      if (var->hasGlobalStorage()) //globals can't be changed
+        return std::make_pair(Unknown, nullptr);
+      else if(var->hasAttr<NodeCppMayExtendAttr>())
         return std::make_pair(This, nullptr);
-      }
-      return std::make_pair(Stack, decl);
+      else
+        return std::make_pair(Stack, decl);
     }
   } else if (auto member = dyn_cast<MemberExpr>(expr)) {
     // TODO verify only members and not methods will get in here
     return calculateScope(member->getBase());
-  } else if (isa<CXXThisExpr>(expr)) {
-    return std::make_pair(This, nullptr);
-  } else if (isa<CXXNullPtrLiteralExpr>(expr)) {
-    return std::make_pair(Global, nullptr);
-  } else if (auto op = dyn_cast<UnaryOperator>(expr)) {
-    if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-      return calculateScope(op->getSubExpr());
-    }
-  // } else if (auto op = dyn_cast<ConditionalOperator>(expr)) {
-  //   auto t = calculateScope(op->getTrueExpr());
-  //   auto f = calculateScope(op->getFalseExpr());
-  //   return calculateShorterScope(t, f);
   }
 
   llvm::errs() << "NakedPtrScopeChecker::calculateScope > Unknown\n";
   expr->dumpColor();
   return std::make_pair(Unknown, nullptr);
 }
-
-// /* static */
-// std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> NakedPtrScopeChecker::calculateShorterScope(std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> l, std::pair<NakedPtrScopeChecker::OutputScope, const Decl*> r) {
-
-//   if (l.first == Unknown || r.first == Unknown) {
-//     return {Unknown, nullptr};
-//   }
-//   if(l.first == Stack || r.first == Stack) {
-//     //TODO need to find shortets decl
-//     return {Unknown, nullptr};
-//   }
-
-//   if(l.first == Param || r.first == Param) {
-//     //TODO need to find shortets decl
-//     return {Param, nullptr};
-//   }
-
-//   if(l.first == This || r.first == This) {
-//     //TODO need to find shortets decl
-//     return {This, nullptr};
-//   }
-
-//   return {Global, nullptr};
-// }
 
 /* static */
 NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
