@@ -79,7 +79,7 @@ public:
   NakedPtrScopeChecker makeChecker(ClangTidyCheck *check, ASTContext *context, const Expr* toExpr);
 
   static
-  bool hasThisScope(const Expr* expr);
+  bool hasAtLeastThisScope(const Expr* expr);
 
   static
   bool hasParamScope(const Expr* expr);

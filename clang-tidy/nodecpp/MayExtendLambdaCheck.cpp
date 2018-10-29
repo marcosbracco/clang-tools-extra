@@ -87,13 +87,46 @@ void MayExtendLambdaCheck::checkLambda2(const LambdaExpr *lamb) {
   }
 }
 
+/* static */
+bool MayExtendLambdaCheck::hasRealLifeAsThis(const Expr* expr) {
+
+  if(!expr) {
+    assert(false);
+    return false;
+  }
+
+  expr = expr->IgnoreParenImpCasts();
+
+  if (isa<CXXThisExpr>(expr)) {
+    return true;
+  }
+  else if (auto member = dyn_cast<MemberExpr>(expr)) {
+    //this is allways 'arrow', so check first
+    if(isa<CXXThisExpr>(member->getBase()))
+      return true;
+
+    if(member->isArrow())
+      return false;
+
+    return hasRealLifeAsThis(member->getBase());
+  }
+
+  return false;
+}
+
 void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
 
-  const auto *MatchedExpr = Result.Nodes.getNodeAs<CallExpr>("call");
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXMethodDecl>("decl");
+  auto call = Result.Nodes.getNodeAs<CXXMemberCallExpr>("call");
+  auto decl = Result.Nodes.getNodeAs<CXXMethodDecl>("decl");
 
-  for (unsigned i = 0; i != MatchedDecl->param_size(); ++i) {
-    auto p = MatchedDecl->getParamDecl(i);
+  auto callee = call->getCallee();
+  if(!hasRealLifeAsThis(callee)) {
+    diag(callee->getExprLoc(), "methods with [[may_extend_to_this]] attribute can be called only on members that share the lifetime of this");
+    return;
+  }
+
+  for (unsigned i = 0; i != decl->param_size(); ++i) {
+    auto p = decl->getParamDecl(i);
     if (p->hasAttr<NodeCppMayExtendAttr>()) {
 
       // auto dt = p->getType().getTypePtrOrNull();
@@ -108,13 +141,13 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
       //   if (name == "std::function") {}
   
       // }
-      auto e = MatchedExpr->getArg(i);
+      auto e = call->getArg(i);
       if(isFunctionPtr(e)) {
         continue;
       } else if(auto lamb = getLambda(e)) {
         checkLambda(lamb);
         continue;
-      } else if(NakedPtrScopeChecker::hasThisScope(e)) {
+      } else if(NakedPtrScopeChecker::hasAtLeastThisScope(e)) {
         continue;
       }
 	    // e may be null?

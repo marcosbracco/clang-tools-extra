@@ -624,7 +624,7 @@ NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
 }
 
 /* static */
-bool NakedPtrScopeChecker::hasThisScope(const Expr *expr) {
+bool NakedPtrScopeChecker::hasAtLeastThisScope(const Expr *expr) {
   auto sc = NakedPtrScopeChecker::calculateScope(expr);
 
     switch (sc.first) {
@@ -640,6 +640,8 @@ bool NakedPtrScopeChecker::hasThisScope(const Expr *expr) {
       return false;
     }
 }
+
+
 
 /* static */
 bool NakedPtrScopeChecker::hasParamScope(const Expr *expr) {

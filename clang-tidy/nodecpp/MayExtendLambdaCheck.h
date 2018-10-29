@@ -27,6 +27,7 @@ public:
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void checkLambda(const LambdaExpr *lamb);
   void checkLambda2(const LambdaExpr *lamb);
+  static bool hasRealLifeAsThis(const Expr* expr);
 
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
