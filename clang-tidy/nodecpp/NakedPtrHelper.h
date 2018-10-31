@@ -26,9 +26,11 @@ bool isUnsafeName(const std::string &Name);
 bool isParamOnlyType(QualType qt);
 
 bool isNakedStructRecord(const CXXRecordDecl *decl);
-bool isStackOnlyType(QualType qt);
 bool isNakedPointerType(QualType qt);
 bool isNakedStructType(QualType qt);
+inline bool isStackOnlyType(QualType qt) { 
+  return isNakedPointerType(qt) || isNakedStructType(qt);
+}
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);

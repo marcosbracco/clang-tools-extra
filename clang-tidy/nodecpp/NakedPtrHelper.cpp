@@ -74,7 +74,7 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
   if (isNakedStructName(name))
     return true;
 
-
+  std::list<const FieldDecl*> missingInitializers;
   auto f = decl->fields();
   for (auto it = f.begin(); it != f.end(); ++it) {
 
@@ -82,7 +82,13 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
     if(isSafeType(qt))
       continue;
 
-    if(isStackOnlyType(qt))
+    if(isNakedPointerType(qt)) {
+      if(!(*it)->hasInClassInitializer())
+        missingInitializers.push_back(*it);
+  
+      continue;
+    }
+    if(isNakedStructType(qt))
       continue;
 
     return false;
@@ -98,8 +104,24 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
 
     auto method = *it;
 
-    if(isa<CXXConstructorDecl>(method) || isa<CXXDestructorDecl>(method))
+    if(isa<CXXDestructorDecl>(method))
       continue;
+
+    if(auto ctr = dyn_cast<CXXConstructorDecl>(method)) {
+      if(!missingInitializers.empty()) {
+        auto inits = ctr->inits();
+        std::list<const FieldDecl*> decls(missingInitializers);
+        for(auto jt = inits.begin();jt != inits.end(); ++jt) {
+          if((*jt)->isMemberInitializer()) {
+              decls.remove((*jt)->getMember());
+          }
+        }
+
+        if(!decls.empty())
+          return false;
+      }
+      continue;
+    }
 
     if(method->isConst())
       continue;
@@ -118,26 +140,6 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
 
 }
 
-
-bool isStackOnlyType(QualType qt) {
-
-  assert(!isSafeType(qt));
-
-  auto t = qt.getCanonicalType().getTypePtrOrNull();
-  if (!t) {
-  	// this is a build problem with the type
-    // not really our problem yet
-    return false; 
-  } 
-  else if (t->isReferenceType() || t->isPointerType()) {
-      return isSafeType(t->getPointeeType());
-  } else if (t->isRecordType()) {
-    return isNakedStructRecord(t->getAsCXXRecordDecl());
-  }
-  
-    //t->dump();
-  return false;
-}
 
 bool isNakedPointerType(QualType qt){
 
