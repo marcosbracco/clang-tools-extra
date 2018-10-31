@@ -60,30 +60,30 @@ void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
   }
 }
 
-void MayExtendLambdaCheck::checkLambda2(const LambdaExpr *lamb) {
+// void MayExtendLambdaCheck::checkLambda2(const LambdaExpr *lamb) {
 
-  auto fields = lamb->getLambdaClass()->fields();
-  for (auto it = fields.begin(); it != fields.end(); ++it) {
-    if (isSafeType(it->getType()))
-      continue;
+//   auto fields = lamb->getLambdaClass()->fields();
+//   for (auto it = fields.begin(); it != fields.end(); ++it) {
+//     if (isSafeType(it->getType()))
+//       continue;
 
-    auto ptr = it->getType().getCanonicalType().getTypePtrOrNull();
-    if (!ptr)
-      continue; // some type error, not our problem
+//     auto ptr = it->getType().getCanonicalType().getTypePtrOrNull();
+//     if (!ptr)
+//       continue; // some type error, not our problem
 
-    if (!ptr->isPointerType()) {
-      diag(it->getLocation(), "capture type not allowed");
-      continue;
-    }
-    auto r = ptr->getPointeeCXXRecordDecl();
-    if (!r->hasAttr<NodeCppNoInstanceAttr>()) {
-      diag(it->getLocation(), "capture pointer type not allowed");
-      continue;
-    }
+//     if (!ptr->isPointerType()) {
+//       diag(it->getLocation(), "capture type not allowed");
+//       continue;
+//     }
+//     auto r = ptr->getPointeeCXXRecordDecl();
+//     if (!r->hasAttr<NodeCppNoInstanceAttr>()) {
+//       diag(it->getLocation(), "capture pointer type not allowed");
+//       continue;
+//     }
 
-    // we are safe continue with next
-  }
-}
+//     // we are safe continue with next
+//   }
+// }
 
 /* static */
 const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
