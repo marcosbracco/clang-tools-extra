@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-may-extend-decl
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-may-extend-decl.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-naked-ptr-return
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-return.html>`_ check
 

@@ -150,8 +150,8 @@ bool MayExtendLambdaCheck::hasRealLifeAsThis(const Expr* expr) {
 
 void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
 
-  auto call = Result.Nodes.getNodeAs<CXXMemberCallExpr>("call");
-  auto decl = Result.Nodes.getNodeAs<CXXMethodDecl>("decl");
+  auto call = Result.Nodes.getNodeAs<CallExpr>("call");
+  auto decl = Result.Nodes.getNodeAs<FunctionDecl>("decl");
 
   auto callee = call->getCallee();
   if(!hasRealLifeAsThis(callee)) {
