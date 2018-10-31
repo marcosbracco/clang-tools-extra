@@ -25,9 +25,10 @@ public:
   MayExtendLambdaCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
-  void checkLambda(const LambdaExpr *lamb);
+  bool checkLambda(const LambdaExpr *lamb);
 //  void checkLambda2(const LambdaExpr *lamb);
-  static const LambdaExpr *getLambda(const Expr *expr);
+ // static const LambdaExpr *getLambda(const Expr *expr);
+  bool tryCheckAsLambda(const Expr *expr);
   static bool hasRealLifeAsThis(const Expr* expr);
 
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;

@@ -45,14 +45,23 @@ void PtrArithmeticCheck::registerMatchers(MatchFinder *Finder) {
           hasBase(ignoringImpCasts(
               anyOf(hasType(pointerType()),
                     hasType(decayedType(hasDecayedType(pointerType())))))))
-          .bind("expr"),
+          .bind("arr"),
       this);
 }
 
 void PtrArithmeticCheck::check(const MatchFinder::MatchResult &Result) {
-  const auto *MatchedExpr = Result.Nodes.getNodeAs<Expr>("expr");
 
-  diag(MatchedExpr->getExprLoc(), "do not use pointer arithmetic");
+  auto expr = Result.Nodes.getNodeAs<Expr>("expr");
+  if(expr) {
+    diag(expr->getExprLoc(), "do not use pointer arithmetic");
+    return;
+  }
+
+  auto arr = Result.Nodes.getNodeAs<ArraySubscriptExpr>("arr");
+  if(arr) {
+    diag(arr->getRBracketLoc(), "do not use index operator on unsafe types");
+    return;
+  }
 }
 
 } // namespace nodecpp

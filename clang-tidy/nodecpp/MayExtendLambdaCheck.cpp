@@ -26,7 +26,7 @@ void MayExtendLambdaCheck::registerMatchers(MatchFinder *Finder) {
                      this);
 }
 
-void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
+bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
   
   auto caps = lamb->captures();
   for (auto it = caps.begin(); it != caps.end(); ++it) {
@@ -47,17 +47,19 @@ void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
         break;
 
       diag(it->getLocation(), "unsafe capture to extend scope");
-    } break;
+    } return false;
     case LCK_ByRef:
-      diag(it->getLocation(), "capture by reference not allowed");
-      break;
+      diag(it->getLocation(), "unsafe capture to extend scope");
+      return false;
     case LCK_VLAType:
       diag(it->getLocation(), "capture by array not allowed");
-      break;
+      return false;
     default:
       diag(it->getLocation(), "unknow capture kind not allowed");
+      return false;
     }
   }
+  return true;
 }
 
 // void MayExtendLambdaCheck::checkLambda2(const LambdaExpr *lamb) {
@@ -86,24 +88,56 @@ void MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb) {
 // }
 
 /* static */
-const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
+// const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
+
+//   if (!expr)
+//     return nullptr;
+
+//   auto e = ignoreTemporaries(expr);
+
+//   if (auto lamb = dyn_cast<LambdaExpr>(e)) {
+//     return lamb;
+//   } else if (auto ref = dyn_cast<DeclRefExpr>(e)) {
+//     // diag(e->getExprLoc(), "argument is declRef");
+//     if (auto d = dyn_cast_or_null<VarDecl>(ref->getDecl())) {
+//       return getLambda(d->getInit());
+//     }
+//   }
+
+//   return nullptr;
+// }
+
+//returns true if the expression was checked (either positively or negatively)
+bool MayExtendLambdaCheck::tryCheckAsLambda(const Expr *expr) {
+//const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
 
   if (!expr)
-    return nullptr;
+    return false;
 
   auto e = ignoreTemporaries(expr);
 
   if (auto lamb = dyn_cast<LambdaExpr>(e)) {
-    return lamb;
+    checkLambda(lamb);
+    return true;
   } else if (auto ref = dyn_cast<DeclRefExpr>(e)) {
     // diag(e->getExprLoc(), "argument is declRef");
     if (auto d = dyn_cast_or_null<VarDecl>(ref->getDecl())) {
-      return getLambda(d->getInit());
+      auto init = d->getInit();
+      if(init) {
+        auto e2 = ignoreTemporaries(init);
+        if (auto lamb2 = dyn_cast<LambdaExpr>(e2)) {
+          if(!checkLambda(lamb2)) {
+            diag(expr->getExprLoc(), "referenced from here", DiagnosticIDs::Note);
+          }
+          return true;
+        }
+      }       
     }
   }
 
-  return nullptr;
+  return false;
 }
+
 
 /* static */
 bool MayExtendLambdaCheck::hasRealLifeAsThis(const Expr* expr) {
@@ -166,8 +200,7 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
       auto e = call->getArg(i);
       if(isFunctionPtr(e)) {
         continue;
-      } else if(auto lamb = getLambda(e)) {
-        checkLambda(lamb);
+      } else if(tryCheckAsLambda(e)) {
         continue;
       } else {
         auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this);
