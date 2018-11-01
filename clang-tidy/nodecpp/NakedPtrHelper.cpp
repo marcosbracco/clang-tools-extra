@@ -588,7 +588,10 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
     }
   } else if (auto member = dyn_cast<MemberExpr>(expr)) {
     // TODO verify only members and not methods will get in here
+    // TODO also verify is a hard member and not a pointer / unique_ptr
     return calculateScope(member->getBase());
+  } else if (isa<CXXThisExpr>(expr)) {
+    return std::make_pair(This, nullptr);
   }
 
   llvm::errs() << "NakedPtrScopeChecker::calculateScope > Unknown\n";
