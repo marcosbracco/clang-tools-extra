@@ -1,40 +1,40 @@
 // RUN: %check_clang_tidy %s nodecpp-naked-ptr-assignment %t
 
 void good1() { 
-	int* p1; 
-	int* p2; 
+	int* p1 = nullptr; 
+	int* p2 = nullptr; 
 	p2 = p1; 
 }
 
 void good2() { 
-	int* p1; 
+	int* p1 = nullptr; 
 	{ 
-		int* p2; 
+		int* p2 = nullptr; 
 		p2 = p1;
 	}
 }
 
 void bad1() {
-	int* p1;
+	int* p1 = nullptr;
 	{
-		int* bad;
+		int* bad = nullptr;
 		p1 = bad;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	} 
 }
 
 void good3() {
-	int p1;
+	int p1 = 0;
 	{
-		int* p2;
+		int* p2 = nullptr;
 		p2 = &p1;
 	}
 }
 
 void bad2() {
-	int* p1;
+	int* p1 = nullptr;
 	{
-		int bad;
+		int bad = 0;
 		p1 = &bad;
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
@@ -62,8 +62,8 @@ int* func7(int*, char*); //don't worry about char*
 char* func8(char*, const char*); //don't worry about const char*
 
 void f1(int* arg) {
-	int* p1;
-	int i;
+	int* p1 = nullptr;
+	int i = 0;
 
 	func(p1); //ok
 	func(&i); //ok
@@ -91,7 +91,7 @@ void f1(int* arg) {
 
 
 	{
-		int iBad;
+		int iBad = 0;
 		p1 = func(&iBad); //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
@@ -99,23 +99,23 @@ void f1(int* arg) {
 	p1 = func2(p1, &i); // both args ok
 
 	{	
-		int iBad;
+		int iBad = 0;
 		p1 = func2(p1, &iBad); // bad
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
 	{	
-		int iBad;
+		int iBad = 0;
 		p1 = func2(&iBad, p1); //bad 
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 	{
-		int i; 
+		int i = 0; 
 		p1 = func3(i, p1); //ok, don't worry about value arg
 	}
 
 	{
-		int i;
+		int i = 0;
 		p1 = func4(i); //bad, worry about ref arg
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
@@ -126,20 +126,20 @@ void f1(int* arg) {
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
 
-	Some* sp;
+	Some* sp = nullptr;
 	{
-		int i;
+		int i = 0;
 		sp = func6(i, sp); //ok
 	}
 
 	{
-		char* cp;
+		char* cp = nullptr;
 		p1 = func7(p1, cp); //ok, char* can't become int*
 	}
 
-	char* cp1;
+	char* cp1 = nullptr;
 	{
-		const char* cp2;
+		const char* cp2 = nullptr;
 		cp1 = func8(cp1, cp2); // ok conts char can't become char*
 	}
 }
@@ -150,7 +150,7 @@ void f2(Some* arg) {
 	s.get(); //ok
 	int* p2 = s.get(); //ok
 
-	int* p1;
+	int* p1 = nullptr;
 	p1 = s.get(); //ok
 
 	Some* sp = &s;
@@ -173,7 +173,7 @@ void f2(Some* arg) {
 	}
 
 	{
-		Some* ptrInt;
+		Some* ptrInt = nullptr;
 		sp = s.join(ptrInt); //bad argument goes out of scope
 // CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
 	}
