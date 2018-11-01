@@ -36,7 +36,7 @@ void safeFun() {
 
 
 struct NakedStr {
-	int* ptr;
+	int* ptr = nullptr;
 
 	int* get() const;
 	NakedStr();
@@ -46,7 +46,7 @@ struct NakedStr {
 
 void nakedFunc() {
 	
-	int* i; //ok
+	int* i = nullptr; //ok
 	NakedStr naked; //ok
 }
 
