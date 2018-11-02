@@ -109,16 +109,16 @@ def main():
         clang_tidy_output +
         '\n------------------------------------------------------------------')
 
-  try:
-    diff_output = subprocess.check_output(
-        ['diff', '-u', original_file_name, temp_file_name],
-        stderr=subprocess.STDOUT)
-  except subprocess.CalledProcessError as e:
-    diff_output = e.output
-
-  print('------------------------------ Fixes -----------------------------\n' +
-        diff_output.decode() +
-        '\n------------------------------------------------------------------')
+#  try:
+#    diff_output = subprocess.check_output(
+#        ['diff', '-u', original_file_name, temp_file_name],
+#        stderr=subprocess.STDOUT)
+#  except subprocess.CalledProcessError as e:
+#    diff_output = e.output
+#
+#  print('------------------------------ Fixes -----------------------------\n' +
+#        diff_output.decode() +
+#        '\n------------------------------------------------------------------')
 
   if has_check_fixes:
     try:
