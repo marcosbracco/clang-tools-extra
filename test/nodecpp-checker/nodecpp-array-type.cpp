@@ -2,5 +2,5 @@
 
 void f() { 
 	int i[1];
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-array-type]
+// CHECK-MESSAGES: :[[@LINE-1]]:2: warning: do not use arrays [nodecpp-array-type]
 }
