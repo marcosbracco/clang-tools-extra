@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s nodecpp-array-type %t
+// RUN: %check_nodecpp_checker %s nodecpp-array-type %t
 
 void f() { 
 	int i[1];

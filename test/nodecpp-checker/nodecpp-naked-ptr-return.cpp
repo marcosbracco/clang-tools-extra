@@ -1,12 +1,12 @@
-// RUN: %check_clang_tidy %s nodecpp-naked-ptr-return %t
+// RUN: %check_nodecpp_checker %s nodecpp-naked-ptr-return %t
 
 
 
 
 int* bad1() {
     int i;
-    return &i;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+    return &i; //bad return address of local var
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: return of naked pointer may extend scope [nodecpp-naked-ptr-return]
 }
 
 int* good1(int* a) {

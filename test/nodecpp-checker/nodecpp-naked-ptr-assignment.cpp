@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s nodecpp-naked-ptr-assignment %t
+// RUN: %check_nodecpp_checker %s nodecpp-naked-ptr-assignment %t
 
 void good1() { 
 	int* p1 = nullptr; 

@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s nodecpp-static-storage %t
+// RUN: %check_nodecpp_checker %s nodecpp-static-storage %t
 
 
 constexpr int good = 5;

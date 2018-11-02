@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s nodecpp-var-decl %t
+// RUN: %check_nodecpp_checker %s nodecpp-var-decl %t
 
 // good definition of nodecpp::unique_ptr
 namespace std {
@@ -66,15 +66,27 @@ struct Bad3 {
 
 void badFunc() {
 	int** i; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: unsafe type at variable declaration [nodecpp-var-decl]
 	NakedStr* nakedPtr; // bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: unsafe type at variable declaration [nodecpp-var-decl]
 
 	Bad1 b1; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 	b1 = Bad1(); //this forces Bad1::operator= to be instantiated
 	Bad2 b2; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 	Bad3 b3; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-static-storage]
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 }
+
+class Sock {};
+
+class Safe {
+
+	void mayExtendCallback(Sock* dontExtend, Sock* sock [[nodecpp::may_extend_to_this]]) {
+		Sock* other [[nodecpp::may_extend_to_this]] = sock;
+		Sock* other2 [[nodecpp::may_extend_to_this]] = dontExtend; //bad donExtend is not valid initializer
+// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: initializer not allowed to may_extend declaration [nodecpp-var-decl]
+	}
+
+};

@@ -1,15 +1,15 @@
-// RUN: %check_clang_tidy %s nodecpp-no-cast %t
+// RUN: %check_nodecpp_checker %s nodecpp-no-cast %t
 
 
 void bad1() { 
 	size_t i;
 	auto r1 = reinterpret_cast<void*>(i);
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: do not use cast [nodecpp-no-cast]
 	auto r2 = (void*)i;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: do not use cast [nodecpp-no-cast]
 	void* p;
 	auto r3 = static_cast<size_t*>(p);
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-no-cast]
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: do not use cast [nodecpp-no-cast]
 
 }
 

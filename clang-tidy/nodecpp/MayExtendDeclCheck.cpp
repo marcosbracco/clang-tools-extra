@@ -36,7 +36,7 @@ void MayExtendDeclCheck::check(const MatchFinder::MatchResult &Result) {
     for (unsigned i = 0; i != decl->param_size(); ++i) {
       auto p = decl->getParamDecl(i);
       if (p->hasAttr<NodeCppMayExtendAttr>()) {
-        diag(p->getLocation(), "attribute [[may_extend_to_this]] can't be used on lambdas");
+        diag(p->getLocation(), "attribute [may_extend_to_this] can't be used on lambdas");
         return;
       }
     }
@@ -49,16 +49,16 @@ void MayExtendDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto m = dyn_cast<CXXMethodDecl>(d);
   if(!m) {
-    diag(d->getLocation(), "attribute [[may_extend_to_this]] can only be used on non-static member methods");
+    diag(d->getLocation(), "attribute [may_extend_to_this] can only be used on non-static member methods");
     return;
   }
 
   if(m->isStatic()) {
-    diag(d->getLocation(), "attribute [[may_extend_to_this]] can't be used on static member methods");
+    diag(d->getLocation(), "attribute [may_extend_to_this] can't be used on static member methods");
     return;
   } else if(isLambdaCallOperator(m)) {
     //this is not matching anything
-    diag(d->getLocation(), "attribute [[may_extend_to_this]] can't be used on lambdas");
+    diag(d->getLocation(), "attribute [may_extend_to_this] can't be used on lambdas");
     return;
   }
 

@@ -189,7 +189,7 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto callee = call->getCallee();
   if(!hasRealLifeAsThis(callee)) {
-    diag(callee->getExprLoc(), "methods with [[may_extend_to_this]] attribute can be called only on members that share the lifetime of this");
+    diag(callee->getExprLoc(), "methods with [may_extend_to_this] attribute can be called only on members that share the lifetime of this");
     return;
   }
 

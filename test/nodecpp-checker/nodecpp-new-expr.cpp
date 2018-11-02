@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s nodecpp-new-expr %t
+// RUN: %check_nodecpp_checker %s nodecpp-new-expr %t
 
 
 // good definition of nodecpp::unique_ptr
