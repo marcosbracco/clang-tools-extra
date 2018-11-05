@@ -51,7 +51,7 @@ bool isParamOnlyType(QualType qt) {
       return false;
   } else if (t->isRecordType()) {
     auto decl = t->getAsCXXRecordDecl();
-    if (!decl)
+    if (!decl || !decl->hasDefinition())
       return false;
 
     auto name = decl->getQualifiedNameAsString();
@@ -65,7 +65,7 @@ bool isParamOnlyType(QualType qt) {
 
 bool isNakedStructRecord(const CXXRecordDecl *decl) {
 
-  if (!decl) {
+  if (!decl || !decl->hasDefinition()) {
     return false;
   }
 
@@ -183,7 +183,7 @@ bool isNakedStructType(QualType qt){
 
 bool isSafeRecord(const CXXRecordDecl *decl) {
 
-  if (!decl) {
+  if (!decl || !decl->hasDefinition()) {
     return false;
   }
 
