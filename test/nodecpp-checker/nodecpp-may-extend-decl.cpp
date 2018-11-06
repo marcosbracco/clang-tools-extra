@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-may-extend-decl %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-may-extend-decl -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 class Sock {};
 

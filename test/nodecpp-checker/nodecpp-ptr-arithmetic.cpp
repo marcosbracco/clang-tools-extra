@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-ptr-arithmetic %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-ptr-arithmetic -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 
 void bad() {

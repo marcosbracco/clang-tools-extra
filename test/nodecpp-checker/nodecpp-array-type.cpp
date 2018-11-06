@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-array-type %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-array-type -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 void f() { 
 	int i[1];

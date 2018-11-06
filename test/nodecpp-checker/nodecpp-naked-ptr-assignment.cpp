@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-naked-ptr-assignment %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-naked-ptr-assignment -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 void good1() { 
 	int* p1 = nullptr; 

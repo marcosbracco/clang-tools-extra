@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-static-storage %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-static-storage -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 
 constexpr int good = 5;

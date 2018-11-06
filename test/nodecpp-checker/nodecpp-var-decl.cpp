@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-var-decl %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-var-decl -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 // good definition of nodecpp::unique_ptr
 namespace std {

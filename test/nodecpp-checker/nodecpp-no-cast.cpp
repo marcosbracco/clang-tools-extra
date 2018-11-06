@@ -1,4 +1,4 @@
-// RUN: %check_nodecpp_checker %s nodecpp-no-cast %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-no-cast -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 
 void bad1() { 
@@ -17,4 +17,7 @@ void good1(int&& i) {
 	((void) 0); //ok, definition of assert macro
 
 	int&& j = static_cast<int&&>(i); //static cast to rvalue is ok
+
+	short s1 = static_cast<long>(5); // cast of non pointer is ok
+	short s2 = (long) 5; // cast of non pointer is ok
 }
