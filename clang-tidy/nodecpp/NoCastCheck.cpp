@@ -20,15 +20,16 @@ namespace nodecpp {
 void NoCastCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(cxxConstCastExpr().bind("cast"), this);
-  Finder->addMatcher(cxxStaticCastExpr(unless(hasDestinationType(rValueReferenceType()))).bind("cast"), this);
-  Finder->addMatcher(cxxReinterpretCastExpr().bind("cast"), this);
 
-  Finder->addMatcher(
-      cStyleCastExpr(
-          unless(allOf(hasDestinationType(voidType()),
-                       hasSourceExpression(integerLiteral(equals(0))))))
-          .bind("cast"),
-      this);
+  Finder->addMatcher(cxxStaticCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
+//  Finder->addMatcher(cxxStaticCastExpr(allOf( hasDestinationType(referenceType()), unless(hasDestinationType(rValueReferenceType())) )).bind("cast"), this);
+  Finder->addMatcher(cxxStaticCastExpr( hasDestinationType(lValueReferenceType()) ).bind("cast"), this);
+  	
+  Finder->addMatcher(cxxReinterpretCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
+  Finder->addMatcher(cxxReinterpretCastExpr(hasDestinationType(referenceType())).bind("cast"), this);
+  
+  Finder->addMatcher(cStyleCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
+  Finder->addMatcher(cStyleCastExpr(hasDestinationType(referenceType())).bind("cast"), this);
 }
 
 void NoCastCheck::check(const MatchFinder::MatchResult &Result) {
