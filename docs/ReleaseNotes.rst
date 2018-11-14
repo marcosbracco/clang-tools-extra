@@ -31,6 +31,24 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-ptr-assignment' check was renamed to `nodecpp-naked-assignment
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-assignment.html>`_
+
+- New `nodecpp-raw-pointer-assignment
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-pointer-assignment.html>`_ check
+
+  FIXME: add release notes.
+
+- New `nodecpp-naked-struct
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-struct.html>`_ check
+
+  FIXME: add release notes.
+
+- New `nodecpp-std-function
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-std-function.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-may-extend-decl
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-may-extend-decl.html>`_ check
 

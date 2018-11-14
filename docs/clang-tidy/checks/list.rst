@@ -178,12 +178,15 @@ Clang-Tidy Checks
    nodecpp-array-type
    nodecpp-may-extend-decl
    nodecpp-may-extend-lambda
-   nodecpp-naked-ptr-assignment
+   nodecpp-naked-assignment
    nodecpp-naked-ptr-return
+   nodecpp-naked-struct
    nodecpp-new-expr
    nodecpp-no-cast
    nodecpp-ptr-arithmetic
+   nodecpp-raw-pointer-assignment
    nodecpp-static-storage
+   nodecpp-std-function
    nodecpp-var-decl-func
    nodecpp-var-decl
    objc-avoid-nserror-init

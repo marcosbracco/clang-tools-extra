@@ -1,4 +1,4 @@
-//===--- NakedPtrAssignmentCheck.h - clang-tidy------------------*- C++ -*-===//
+//===--- NakedAssignmentCheck.h - clang-tidy------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-ptr-assignment.html
-class NakedPtrAssignmentCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-assignment.html
+class NakedAssignmentCheck : public ClangTidyCheck {
 public:
-  NakedPtrAssignmentCheck(StringRef Name, ClangTidyContext *Context)
+  NakedAssignmentCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;

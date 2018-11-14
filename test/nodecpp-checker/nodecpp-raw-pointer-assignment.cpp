@@ -1,4 +1,4 @@
-// RUN: clang-tidy %s --checks=-*,nodecpp-naked-ptr-assignment -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+// RUN: clang-tidy %s --checks=-*,nodecpp-naked-assignment -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 void good1() { 
 	int* p1 = nullptr; 
@@ -19,7 +19,7 @@ void bad1() {
 	{
 		int* bad = nullptr;
 		p1 = bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	} 
 }
 
@@ -36,7 +36,7 @@ void bad2() {
 	{
 		int bad = 0;
 		p1 = &bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 }
 
@@ -93,7 +93,7 @@ void f1(int* arg) {
 	{
 		int iBad = 0;
 		p1 = func(&iBad); //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	p1 = func2(p1, &i); // both args ok
@@ -101,13 +101,13 @@ void f1(int* arg) {
 	{	
 		int iBad = 0;
 		p1 = func2(p1, &iBad); // bad
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	{	
 		int iBad = 0;
 		p1 = func2(&iBad, p1); //bad 
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 	{
 		int i = 0; 
@@ -117,13 +117,13 @@ void f1(int* arg) {
 	{
 		int i = 0;
 		p1 = func4(i); //bad, worry about ref arg
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	{
 		Some s;
 		p1 = func5(s); //bad, assume Some can return int*
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	Some* sp = nullptr;
@@ -159,7 +159,7 @@ void f2(Some* arg) {
 	{
 		Some sInt;
 		p1 = sInt.get(); //bad instance goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	sp = s.join(sp); //ok
@@ -169,13 +169,13 @@ void f2(Some* arg) {
 	{
 		Some sInt;
 		sp = sInt.join(sp); //bad instance goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	{
 		Some* ptrInt = nullptr;
 		sp = s.join(ptrInt); //bad argument goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 }
 
@@ -192,10 +192,10 @@ void f3() {
 		auto f = [](int* p, long) { return p; };
 
 		p1 = f(p1, l); //TODO lambda goes out of scope, but captures are empty
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 
 		p1 = f(&i, l); // bad i goes out of scope
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 
 
 
@@ -203,12 +203,12 @@ void f3() {
 		p1 = (s >> p1); //ok function op
 
 		p1 = (s >> &i); // bad function op
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 
 		lp = s >> lp; // ok method op
 
 		lp = s >> &l; // bad method op
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked pointer may extend scope [nodecpp-naked-ptr-assignment]
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 
 	}
 }

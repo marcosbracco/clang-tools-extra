@@ -1,4 +1,4 @@
-//===--- NakedPtrAssignmentCheck.cpp - clang-tidy--------------------------===//
+//===--- RawPointerAssignmentCheck.cpp - clang-tidy------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NakedPtrAssignmentCheck.h"
+#include "RawPointerAssignmentCheck.h"
 #include "NakedPtrHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -18,7 +18,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NakedPtrAssignmentCheck::registerMatchers(MatchFinder *Finder) {
+void RawPointerAssignmentCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(
       binaryOperator(hasOperatorName("="),
           hasType(pointerType())/*,
@@ -27,15 +27,14 @@ void NakedPtrAssignmentCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-void NakedPtrAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
-
+void RawPointerAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
+  
   auto expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
-
 
   auto checker = NakedPtrScopeChecker::makeChecker(this, Result.Context, expr->getLHS());
 
   if(!checker.checkExpr(expr->getRHS()))
-    diag(expr->getExprLoc(), "assignment of naked pointer may extend scope");
+    diag(expr->getExprLoc(), "assignment of raw pointer may extend scope");
 }
 
 } // namespace nodecpp

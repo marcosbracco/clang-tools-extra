@@ -17,10 +17,12 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-bool isOwnerName(const std::string &Name) { return Name == "std::unique_ptr"; }
+bool isOwnerName(const std::string &Name) {
+  return Name == "std::unique_ptr" || Name == "nodecpp::unique_ptr"; }
 
 bool isSafeName(const std::string &Name) {
-  return isOwnerName(Name) || Name == "nodecpp::net::Socket" ||
+  return isOwnerName(Name) || Name == "nodecpp::safe_ptr" ||
+  Name == "nodecpp::net::Socket" ||
          Name == "nodecpp::net::Server" || Name == "nodecpp::net::Address" ||
          Name == "nodecpp::net::SocketTBase";
 }
@@ -30,16 +32,18 @@ bool isNakedStructName(const std::string &Name) {
   return false;
 }
 
+bool isNakedPtrName(const std::string& name) {
+  return name == "nodecpp::naked_ptr";
+}
 
 bool isUnsafeName(const std::string &Name) {
 	//nothing here yet
-  return isNakedStructName(Name);
+  return isNakedStructName(Name) || isNakedPtrName(Name);
 }
 
 bool isParamOnlyType(QualType qt) {
 
   assert(!isSafeType(qt));
-  assert(!isStackOnlyType(qt));
 
   auto t = qt.getCanonicalType().getTypePtrOrNull();
   if (!t) {
@@ -62,18 +66,20 @@ bool isParamOnlyType(QualType qt) {
   return false;
 }
 
+bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
 
-bool isNakedStructRecord(const CXXRecordDecl *decl) {
+  //on debug break here
+  assert(decl);
+  assert(decl->hasDefinition());
 
   if (!decl || !decl->hasDefinition()) {
     return false;
   }
 
-  // first verify if is a well known class,
-  auto name = decl->getQualifiedNameAsString();
-  if (isNakedStructName(name))
-    return true;
+  //we check explicit and implicit here
+  bool hasAttr = decl->hasAttr<NodeCppNakedStructAttr>();
 
+  bool checkInits = false;
   std::list<const FieldDecl*> missingInitializers;
   auto f = decl->fields();
   for (auto it = f.begin(); it != f.end(); ++it) {
@@ -83,21 +89,27 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
       continue;
 
     if(isNakedPointerType(qt)) {
-      if(!(*it)->hasInClassInitializer())
+      if(checkInits && !(*it)->hasInClassInitializer())
         missingInitializers.push_back(*it);
   
       continue;
     }
+
     if(isNakedStructType(qt))
       continue;
 
+    if(check)
+      check->diag((*it)->getLocation(), "member not allowed at naked struct");
+      
     return false;
   }
 
   auto b = decl->bases();
-  if(b.begin() != b.end())
+  if(b.begin() != b.end()) {
+    if(check)
+      check->diag(b.begin()->getLocStart(), "inheritance not allowed at naked struct");
     return false;//don't allow any bases yet
-
+  }
 
   auto m = decl->methods();
   for(auto it = m.begin(); it != m.end(); ++it) {
@@ -117,8 +129,11 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
           }
         }
 
-        if(!decls.empty())
+        if(!decls.empty()) {
+          if(check)
+            check->diag(method->getLocation(), "constructor of naked struct has uninitialized raw pointers");
           return false;
+        }
       }
       continue;
     }
@@ -129,50 +144,116 @@ bool isNakedStructRecord(const CXXRecordDecl *decl) {
     if(method->isMoveAssignmentOperator() || method->isCopyAssignmentOperator()) {
       if(method->isDeleted())
         continue;
+
+      if(hasAttr && method->isDefaulted())
+        continue;
     }
     
-    // this is a bad method
+    if(check)
+      check->diag(method->getLocation(), "method not allowed at naked struct");
     return false;
   }
   
   // finally we are safe!
   return true;
-
 }
 
 
-bool isNakedPointerType(QualType qt){
+bool isNakedStructType(QualType qt) {
 
   assert(!isSafeType(qt));
 
-  auto t = qt.getCanonicalType().getTypePtrOrNull();
-  if (!t) {
-  	// this is a build problem with the type
-    // not really our problem yet
-    return false; 
-  } 
+  qt = qt.getCanonicalType();
+ 
+  if (qt->isRecordType()) {
+    auto decl = qt->getAsCXXRecordDecl();
+
+    if (!decl || !decl->hasDefinition())
+      return false;
+
+    // first verify if is a well known class,
+    auto name = decl->getQualifiedNameAsString();
+    if (isNakedStructName(name))
+      return true;
   
-  if (t->isReferenceType() || t->isPointerType()) {
-      return isSafeType(t->getPointeeType());
+    //if it has attribute, the some other rule
+    // must have verified it
+    if(decl->hasAttr<NodeCppNakedStructAttr>())
+      return true;
   }
   
     //t->dump();
   return false;
 }
 
-bool isNakedStructType(QualType qt){
+bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
+  return true;
+}
+
+bool isRawPointerType(QualType qt) {
 
   assert(!isSafeType(qt));
 
-  auto t = qt.getCanonicalType().getTypePtrOrNull();
-  if (!t) {
-  	// this is a build problem with the type
-    // not really our problem yet
-    return false; 
-  } 
+  return qt.getCanonicalType()->isPointerType();
+}
 
-  if (t->isRecordType()) {
-    return isNakedStructRecord(t->getAsCXXRecordDecl());
+
+bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
+  return true;
+ 
+  // assert(isNakedPointerType(qt));
+  
+  // qt = qt.getCanonicalType();
+
+  // auto decl = qt->getAsCXXRecordDecl();
+
+  // if (!decl || !decl->hasDefinition())
+  //   return false;
+
+  // // first verify if is a well known class,
+  // auto name = decl->getQualifiedNameAsString();
+  // if (!isNakedPtrName(name))
+  //   return false;
+
+  // if (auto t = qt->getAs<TemplateSpecializationType>()) {
+    
+  //   if(t->getNumArgs() >= 1) {
+
+  //     auto argt = t->getArg(0).getAsType();
+  //     if(isSafeType(argt)) {
+  //       return true;
+  //     }
+  //   }
+  // }
+  //   t->getAsCXXRecordDecl();
+  //   t->get
+
+  //     template
+  //     //TODO verify template type, it must be safe      
+  //     return true;
+  //   }
+  // }
+  
+  //   //t->dump();
+  // return false;
+}
+
+
+
+bool isNakedPointerType(QualType qt) {
+  
+  assert(!isSafeType(qt));
+
+  if (qt->isRecordType()) {
+    auto decl = qt->getAsCXXRecordDecl();
+
+    if (!decl || !decl->hasDefinition())
+      return false;
+
+    // first verify if is a well known class,
+    auto name = decl->getQualifiedNameAsString();
+    if (isNakedPtrName(name))
+      return true;
   }
   
     //t->dump();
@@ -216,18 +297,14 @@ bool isSafeRecord(const CXXRecordDecl *decl) {
 
 bool isSafeType(QualType qt) {
 
-  auto t = qt.getCanonicalType().getTypePtrOrNull();
-  if (!t) {
-  	// this is a build problem with the type
-    // not really our problem yet
-    return false; 
-  } else if (t->isReferenceType() || t->isPointerType()) {
+  qt = qt.getCanonicalType();
+  if (qt->isReferenceType() || qt->isPointerType()) {
       return false;
-  } else if (t->isBuiltinType()) {
+  } else if (qt->isBuiltinType()) {
     return true;
-  } else if (t->isRecordType()) {
-    return isSafeRecord(t->getAsCXXRecordDecl());
-  } else if (t->isTemplateTypeParmType()) {
+  } else if (qt->isRecordType()) {
+    return isSafeRecord(qt->getAsCXXRecordDecl());
+  } else if (qt->isTemplateTypeParmType()) {
     // we will take care at instantiation
     return true;
   } else {

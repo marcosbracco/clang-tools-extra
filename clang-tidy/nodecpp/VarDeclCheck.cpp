@@ -73,32 +73,39 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   if (isSafeType(qt))
     return;
 
-  if(isa<ParmVarDecl>(var)) {
-    if(isStackOnlyType(qt) || isParamOnlyType(qt))
-      return;
+  if(isa<ParmVarDecl>(var) && isParamOnlyType(qt))
+    return;
 
-    diag(var->getLocation(), "unsafe type at parameter declaration");
+  if(isRawPointerType(qt)) {
+    if(checkRawPointerType(qt, this)) {
+      auto e = var->getInit();
+      if(!e) {
+        diag(var->getLocation(), "Raw pointer type must have initializer");
+        return;
+      }
+    }
+
+    //this is all for raw pointer
     return;
   }
 
   //a variable not a parameter
   if(isNakedPointerType(qt)) {
-    auto e = var->getInit();
-    if(!e) {
-      diag(var->getLocation(), "Naked pointer type must have initializer");
-      return;
-    }
 
-    if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      //then we must check scope
-      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
-      if(!sc.checkExpr(e)) {
-        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
-        return;
+    if(checkNakedPointerType(qt, this)) {
+      if(var->hasAttr<NodeCppMayExtendAttr>()) {
+        auto e = var->getInit();
+        //then we must check scope
+        auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
+        if(!sc.checkExpr(e)) {
+          diag(var->getLocation(), "initializer not allowed to may_extend declaration");
+          return;
+        }
       }
     }
 
-    return; //we are ok for naked pointer
+    //this is all for naked_ptr
+    return;
   }
 
   if(isNakedStructType(qt)) {
@@ -106,6 +113,8 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     if(var->hasAttr<NodeCppMayExtendAttr>()) {
       diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
     }
+
+    // this is all for naked_struct
     return;
   }
 

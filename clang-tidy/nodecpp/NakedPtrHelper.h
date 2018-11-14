@@ -21,16 +21,22 @@ namespace nodecpp {
 bool isOwnerName(const std::string &Name);
 bool isSafeName(const std::string &Name);
 bool isNakedStructName(const std::string &Name);
+bool isNakedPtrName(const std::string& name);
 bool isUnsafeName(const std::string &Name);
 
 bool isParamOnlyType(QualType qt);
 
-bool isNakedStructRecord(const CXXRecordDecl *decl);
-bool isNakedPointerType(QualType qt);
+bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
 bool isNakedStructType(QualType qt);
-inline bool isStackOnlyType(QualType qt) { 
-  return isNakedPointerType(qt) || isNakedStructType(qt);
-}
+
+
+bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);
+bool isNakedPointerType(QualType qt);
+
+bool checkRawPointerType(QualType qt, ClangTidyCheck *check);
+bool isRawPointerType(QualType qt);
+
+
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);
