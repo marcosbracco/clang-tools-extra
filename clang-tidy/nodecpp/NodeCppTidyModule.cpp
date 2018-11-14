@@ -21,6 +21,7 @@
 #include "NoCastCheck.h"
 #include "PtrArithmeticCheck.h"
 #include "RawPointerAssignmentCheck.h"
+#include "RawPointerDereferenceCheck.h"
 #include "StaticStorageCheck.h"
 #include "StdFunctionCheck.h"
 #include "VarDeclCheck.h"
@@ -55,6 +56,8 @@ public:
         "nodecpp-ptr-arithmetic");
     CheckFactories.registerCheck<RawPointerAssignmentCheck>(
         "nodecpp-raw-pointer-assignment");
+    CheckFactories.registerCheck<RawPointerDereferenceCheck>(
+        "nodecpp-raw-pointer-dereference");
     CheckFactories.registerCheck<StaticStorageCheck>(
         "nodecpp-static-storage");
     CheckFactories.registerCheck<StdFunctionCheck>(

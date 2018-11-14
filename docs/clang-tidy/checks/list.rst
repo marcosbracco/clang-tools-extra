@@ -185,6 +185,7 @@ Clang-Tidy Checks
    nodecpp-no-cast
    nodecpp-ptr-arithmetic
    nodecpp-raw-pointer-assignment
+   nodecpp-raw-pointer-dereference
    nodecpp-static-storage
    nodecpp-std-function
    nodecpp-var-decl-func

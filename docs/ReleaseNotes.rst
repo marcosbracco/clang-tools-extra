@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-raw-pointer-dereference
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-pointer-dereference.html>`_ check
+
+  FIXME: add release notes.
+
 - The 'nodecpp-naked-ptr-assignment' check was renamed to `nodecpp-naked-assignment
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-naked-assignment.html>`_
 
