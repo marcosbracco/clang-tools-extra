@@ -1,22 +1,16 @@
-// RUN: clang-tidy %s --checks=-*,nodecpp-var-decl -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+// RUN: clang-tidy %s --checks=-*,nodecpp-var-decl -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 // good definition of nodecpp::unique_ptr
-namespace std {
-	template<class T>
-	class unique_ptr {
-	public:
-		unique_ptr() {}
-		unique_ptr(T* ptr) {}
-		void reset(T* ptr) {}
-	};
-}
+#include <nodecpp.h>
+
+using namespace nodecpp;
 
 struct Safe1 {
 	int i;
 };
 
 struct Safe2 {
-	std::unique_ptr<Safe1> s1Ptr;
+	unique_ptr<Safe1> s1Ptr;
 
 	Safe1 s1;
 };
@@ -28,17 +22,17 @@ void safeFun() {
 	Safe1 s1;
 
 	Safe2 s2;
-	std::unique_ptr<Safe2> s2Ptr;
+	unique_ptr<Safe2> s2Ptr;
 
 	Safe3 s3;
-	std::unique_ptr<Safe3> s3Ptr;
+	unique_ptr<Safe3> s3Ptr;
 }
 
-
+//implicit naked struct
 struct NakedStr {
-	int* ptr = nullptr;
+	naked_ptr<int> ptr;
 
-	int* get() const;
+	naked_ptr<int> get() const;
 	NakedStr();
 	NakedStr(const NakedStr&);
 	NakedStr& operator=(const NakedStr&) = delete;
@@ -46,8 +40,10 @@ struct NakedStr {
 
 void nakedFunc() {
 	
-	int* i = nullptr; //ok
+	int* i = nullptr; //bad
+
 	NakedStr naked; //ok
+// CHECK-MESSAGES: :[[@LINE-1]]:11: warning: unsafe type at variable declaration [nodecpp-var-decl]
 }
 
 struct Bad1 {
@@ -65,16 +61,16 @@ struct Bad3 {
 };
 
 void badFunc() {
-	int** i; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: unsafe type at variable declaration [nodecpp-var-decl]
-	NakedStr* nakedPtr; // bad
-// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: unsafe type at variable declaration [nodecpp-var-decl]
+	int** i = nullptr; //bad
+	NakedStr* nakedPtr = nullptr; // bad
 
 	Bad1 b1; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 	b1 = Bad1(); //this forces Bad1::operator= to be instantiated
+// CHECK-MESSAGES: :[[@LINE-2]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
+
 	Bad2 b2; //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
+
 	Bad3 b3; //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 }

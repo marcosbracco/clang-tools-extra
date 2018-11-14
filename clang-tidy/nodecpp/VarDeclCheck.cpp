@@ -78,10 +78,23 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
   if(isRawPointerType(qt)) {
     if(checkRawPointerType(qt, this)) {
+      //params don't need initializer
+      if(isa<ParmVarDecl>(var))
+        return;
+      
       auto e = var->getInit();
       if(!e) {
-        diag(var->getLocation(), "Raw pointer type must have initializer");
+        diag(var->getLocation(), "raw pointer type must have initializer");
         return;
+      }
+
+      if(var->hasAttr<NodeCppMayExtendAttr>()) {
+        //then we must check scope
+        auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
+        if(!sc.checkExpr(e)) {
+          diag(var->getLocation(), "initializer not allowed to may_extend declaration");
+          return;
+        }
       }
     }
 
