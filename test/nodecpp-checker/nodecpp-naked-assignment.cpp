@@ -122,7 +122,8 @@ void f1(naked_ptr<int> arg) {
 	}
 	{
 		int i = 0; 
-		p1 = func3(i, p1); //ok, don't worry about value arg
+		p1 = func3(i, p1); //TODO, don't worry about value arg
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked_ptr may extend scope [nodecpp-naked-assignment]
 	}
 
 	{
@@ -140,18 +141,21 @@ void f1(naked_ptr<int> arg) {
 	naked_ptr<Some> sp;
 	{
 		int i = 0;
-		sp = func6(i, sp); //ok
+		sp = func6(i, sp); //TODO, don't worry about value arg
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked_ptr may extend scope [nodecpp-naked-assignment]
 	}
 
 	{
 		naked_ptr<char> cp;
-		p1 = func7(p1, cp); //ok, char* can't become int*
+		p1 = func7(p1, cp); //TODO, char* can't become int*
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of naked_ptr may extend scope [nodecpp-naked-assignment]
 	}
 
 	naked_ptr<char> cp1;
 	{
 		naked_ptr<const char> cp2;
-		cp1 = func8(cp1, cp2); // ok conts char can't become char*
+		cp1 = func8(cp1, cp2); // TODO conts char can't become char*
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: assignment of naked_ptr may extend scope [nodecpp-naked-assignment]
 	}
 }
 

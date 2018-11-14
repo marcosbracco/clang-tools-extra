@@ -71,6 +71,7 @@ class NakedPtrScopeChecker {
 
   bool checkDeclRefExpr(const DeclRefExpr *declRef);
   bool checkCallExpr(const CallExpr *call);
+  bool checkCXXConstructExpr(const CXXConstructExpr *construct);
 
 public:
   bool checkExpr(const Expr *from);

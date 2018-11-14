@@ -1,4 +1,4 @@
-// RUN: clang-tidy %s --checks=-*,nodecpp-naked-assignment -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+// RUN: clang-tidy %s --checks=-*,nodecpp-raw-pointer-assignment -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 void good1() { 
 	int* p1 = nullptr; 
@@ -111,7 +111,8 @@ void f1(int* arg) {
 	}
 	{
 		int i = 0; 
-		p1 = func3(i, p1); //ok, don't worry about value arg
+		p1 = func3(i, p1); //TODO, don't worry about value arg
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	{
@@ -129,18 +130,21 @@ void f1(int* arg) {
 	Some* sp = nullptr;
 	{
 		int i = 0;
-		sp = func6(i, sp); //ok
+		sp = func6(i, sp); //TODO, don't worry about value arg
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	{
 		char* cp = nullptr;
-		p1 = func7(p1, cp); //ok, char* can't become int*
+		p1 = func7(p1, cp); //TODO, char* can't become int*
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 
 	char* cp1 = nullptr;
 	{
 		const char* cp2 = nullptr;
-		cp1 = func8(cp1, cp2); // ok conts char can't become char*
+		cp1 = func8(cp1, cp2); // TODO conts char can't become char*
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: assignment of raw pointer may extend scope [nodecpp-raw-pointer-assignment]
 	}
 }
 

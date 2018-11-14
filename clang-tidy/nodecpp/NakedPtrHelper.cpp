@@ -397,6 +397,10 @@ const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl) {
 }
 
 bool canArgumentGenerateOutput(QualType out, QualType arg) {
+
+  //until properly updated for naked_ptr template
+  return true;
+
   // out.dump();
   // arg.dump();
   assert(out.isCanonical());
@@ -568,6 +572,23 @@ bool NakedPtrScopeChecker::checkCallExpr(const CallExpr *call) {
   return true;
 }
 
+bool NakedPtrScopeChecker::checkCXXConstructExpr(const CXXConstructExpr *construct) {
+
+  auto args = construct->arguments();
+
+  for(auto it = args.begin(); it != args.end(); ++it) {
+
+    if (!checkExpr(*it)) {
+      return false;
+    }
+  }
+
+  // this is ok!
+  return true;
+
+}
+
+
 bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
 
   if(outScope == Unknown) {
@@ -617,6 +638,10 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
       return false;
   } else if(auto cast = dyn_cast<CastExpr>(from)) {
     return checkExpr(cast->getSubExpr());
+  } else if(auto tmp = dyn_cast<MaterializeTemporaryExpr>(from)) {
+    return checkExpr(tmp->GetTemporaryExpr());
+  } else if(auto construct = dyn_cast<CXXConstructExpr>(from)) {
+    return checkCXXConstructExpr(construct);
   }
 
 
