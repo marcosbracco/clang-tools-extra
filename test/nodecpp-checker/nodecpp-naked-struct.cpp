@@ -1,14 +1,24 @@
-// RUN: %check_clang_tidy %s nodecpp-naked-struct %t
+// RUN: clang-tidy %s --checks=-*,nodecpp-naked-struct -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
-// FIXME: Add something that triggers the check here.
-void f();
-// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: function 'f' is insufficiently awesome [nodecpp-naked-struct]
+#include <nodecpp.h>
 
-// FIXME: Verify the applied fix.
-//   * Make the CHECK patterns specific enough and try to make verified lines
-//     unique to avoid incorrect matches.
-//   * Use {{}} for regular expressions.
-// CHECK-FIXES: {{^}}void awesome_f();{{$}}
+using namespace nodecpp;
 
-// FIXME: Add something that doesn't trigger the check here.
-void awesome_f2();
+struct [[nodecpp::naked_struct]] NakedInner {
+    naked_ptr<long> l;
+};
+
+
+struct [[nodecpp::naked_struct]] Naked {
+
+    naked_ptr<int> i; //ok
+    int* bad1; //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:10: warning: member not allowed at naked struct [nodecpp-naked-struct]
+
+    NakedInner inner;
+
+    naked_ptr<NakedInner> bad2; //TODO
+
+    Naked& operator=(const Naked&) = default;
+};
+

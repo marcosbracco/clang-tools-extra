@@ -19,7 +19,6 @@ namespace tidy {
 namespace nodecpp {
 
 void NakedStructCheck::registerMatchers(MatchFinder *Finder) {
-  // FIXME: Add matchers.
   Finder->addMatcher(cxxRecordDecl(hasAttr(clang::attr::NodeCppNakedStruct)).bind("nake"), this);
 }
 
