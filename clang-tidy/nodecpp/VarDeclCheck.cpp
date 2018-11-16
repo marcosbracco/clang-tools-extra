@@ -69,35 +69,39 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     }
   }
 
-  auto qt = var->getType();
-  if (isSafeType(qt))
+  auto qt = var->getType().getCanonicalType();
+  if (isSafeType(qt)) {
     return;
+  }
 
   if(isa<ParmVarDecl>(var) && isParamOnlyType(qt))
     return;
 
   if(isRawPointerType(qt)) {
-    if(checkRawPointerType(qt, this)) {
-      //params don't need initializer
-      if(isa<ParmVarDecl>(var))
-        return;
-      
-      auto e = var->getInit();
-      if(!e) {
-        diag(var->getLocation(), "raw pointer type must have initializer");
-        return;
-      }
-
-      if(var->hasAttr<NodeCppMayExtendAttr>()) {
-        //then we must check scope
-        auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
-        if(!sc.checkExpr(e)) {
-          diag(var->getLocation(), "initializer not allowed to may_extend declaration");
-          return;
-        }
-      }
+    if(!checkRawPointerType(qt, this)) {
+      diag(var->getLocation(), "Unsafe raw pointer declaration");
+      return;
     }
 
+    
+    //params don't need initializer
+    if(isa<ParmVarDecl>(var))
+      return;
+    
+    auto e = var->getInit();
+    if(!e) {
+      diag(var->getLocation(), "raw pointer type must have initializer");
+      return;
+    }
+
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      //then we must check scope
+      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
+      if(!sc.checkExpr(e)) {
+        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
+        return;
+      }
+    }
     //this is all for raw pointer
     return;
   }
@@ -105,15 +109,18 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   //a variable not a parameter
   if(isNakedPointerType(qt)) {
 
-    if(checkNakedPointerType(qt, this)) {
-      if(var->hasAttr<NodeCppMayExtendAttr>()) {
-        auto e = var->getInit();
-        //then we must check scope
-        auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
-        if(!sc.checkExpr(e)) {
-          diag(var->getLocation(), "initializer not allowed to may_extend declaration");
-          return;
-        }
+    if(!checkNakedPointerType(qt, this)) {
+      diag(var->getLocation(), "unsafe type at naked_ptr declaration");
+      return;
+    }
+    
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      auto e = var->getInit();
+      //then we must check scope
+      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
+      if(!sc.checkExpr(e)) {
+        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
+        return;
       }
     }
 

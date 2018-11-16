@@ -18,7 +18,9 @@ namespace nodecpp {
 
 /// FIXME: Write a short description.
 ///
-bool isOwnerName(const std::string &Name);
+bool isOwnerPtrName(const std::string &Name);
+bool isSafePtrName(const std::string &Name);
+
 bool isSafeName(const std::string &Name);
 bool isNakedStructName(const std::string &Name);
 bool isNakedPtrName(const std::string& name);
@@ -29,14 +31,14 @@ bool isParamOnlyType(QualType qt);
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
 bool isNakedStructType(QualType qt);
 
-
+QualType getPointeeType(QualType qt);
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);
 bool isNakedPointerType(QualType qt);
 
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check);
 bool isRawPointerType(QualType qt);
-
-
+const ClassTemplateSpecializationDecl* getSafePtrDecl(QualType qt);
+bool isSafePtrType(QualType qt);
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);

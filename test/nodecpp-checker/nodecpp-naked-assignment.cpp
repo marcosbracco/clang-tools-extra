@@ -1,6 +1,6 @@
 // RUN: clang-tidy %s --checks=-*,nodecpp-naked-assignment -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
-#include <nodecpp.h>
+#include <safe_ptr.h>
 
 using namespace nodecpp;
 

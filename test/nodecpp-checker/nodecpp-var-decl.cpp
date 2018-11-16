@@ -1,7 +1,6 @@
 // RUN: clang-tidy %s --checks=-*,nodecpp-var-decl -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
-// good definition of nodecpp::unique_ptr
-#include <nodecpp.h>
+#include <safe_ptr.h>
 
 using namespace nodecpp;
 
@@ -10,7 +9,7 @@ struct Safe1 {
 };
 
 struct Safe2 {
-	unique_ptr<Safe1> s1Ptr;
+	owning_ptr<Safe1> s1Ptr;
 
 	Safe1 s1;
 };
@@ -22,10 +21,10 @@ void safeFun() {
 	Safe1 s1;
 
 	Safe2 s2;
-	unique_ptr<Safe2> s2Ptr;
+	owning_ptr<Safe2> s2Ptr;
 
 	Safe3 s3;
-	unique_ptr<Safe3> s3Ptr;
+	owning_ptr<Safe3> s3Ptr;
 }
 
 //implicit naked struct
@@ -62,8 +61,9 @@ struct Bad3 {
 
 void badFunc() {
 	int** i = nullptr; //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: Unsafe raw pointer declaration [nodecpp-var-decl]
 	NakedStr* nakedPtr = nullptr; // bad
-
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: Unsafe raw pointer declaration [nodecpp-var-decl]
 	Bad1 b1; //bad
 	b1 = Bad1(); //this forces Bad1::operator= to be instantiated
 // CHECK-MESSAGES: :[[@LINE-2]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]

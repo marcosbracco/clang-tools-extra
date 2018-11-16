@@ -1,8 +1,9 @@
 // RUN: clang-tidy %s --checks=-*,nodecpp-raw-pointer-dereference -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
-#include <nodecpp.h>
+#include <safe_ptr.h>
 
 using namespace nodecpp;
+
 
 struct Some {
     int i = 0;
@@ -20,8 +21,9 @@ void f() {
     (&s)->i;
 // CHECK-MESSAGES: :[[@LINE-1]]:11: warning: do not dereference raw pointer [nodecpp-raw-pointer-dereference]
 
-    unique_ptr<Some> u;
+    owning_ptr<Some> u;
     u->i; //ok
+    u.get()->i; //ok
     *u; //ok
 }
 
@@ -31,4 +33,3 @@ class Good {
 		return this->i;//ok
 	}
 };
-

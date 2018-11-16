@@ -58,7 +58,7 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
     if (auto constructor = dyn_cast<CXXConstructExpr>(parent)) {
       auto decl = constructor->getConstructor()->getParent();
       auto name = decl->getQualifiedNameAsString();
-      if (isOwnerName(name)) {
+      if (isOwnerPtrName(name)) {
         // this is ok!
         return;
       }
@@ -68,7 +68,7 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
       auto decl = member->getMethodDecl()->getParent();
       auto methodName = method->getNameAsString();
       auto className = decl->getQualifiedNameAsString();
-      if (methodName == "reset" && isOwnerName(className)) {
+      if (methodName == "reset" && isOwnerPtrName(className)) {
         // this is ok!
         return;
       }

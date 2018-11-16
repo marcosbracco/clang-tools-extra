@@ -17,11 +17,16 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-bool isOwnerName(const std::string &Name) {
-  return Name == "std::unique_ptr" || Name == "nodecpp::unique_ptr"; }
+bool isOwnerPtrName(const std::string &Name) {
+  return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr";
+}
+
+bool isSafePtrName(const std::string &Name) {
+  return isOwnerPtrName(Name) || Name == "nodecpp::soft_ptr";
+}
 
 bool isSafeName(const std::string &Name) {
-  return isOwnerName(Name) || Name == "nodecpp::safe_ptr" ||
+  return isSafePtrName(Name) ||
   Name == "nodecpp::net::Socket" ||
          Name == "nodecpp::net::Server" || Name == "nodecpp::net::Address" ||
          Name == "nodecpp::net::SocketTBase";
@@ -187,7 +192,13 @@ bool isNakedStructType(QualType qt) {
 }
 
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
-  return true;
+  
+  qt = qt.getCanonicalType();
+
+  assert(isRawPointerType(qt));
+  QualType pointee = qt->getPointeeType();
+
+  return isSafeType(pointee);
 }
 
 bool isRawPointerType(QualType qt) {
@@ -197,69 +208,85 @@ bool isRawPointerType(QualType qt) {
   return qt.getCanonicalType()->isPointerType();
 }
 
+const ClassTemplateSpecializationDecl* getSafePtrDecl(QualType qt) {
+  
+  qt = qt.getCanonicalType();
+
+  auto decl = dyn_cast_or_null<ClassTemplateSpecializationDecl>(qt->getAsCXXRecordDecl());
+  if(!decl)
+    return nullptr;
+
+  if(!decl->hasDefinition())
+    return nullptr;
+
+  auto& args = decl->getTemplateArgs();
+  
+  if(args.size() < 1)
+    return nullptr;
+
+  auto& arg0 = args.get(0);
+  
+  if(arg0.getKind() != TemplateArgument::Type)
+    return nullptr;
+
+  return decl;
+}
+
+QualType getPointeeType(QualType qt) {
+
+  if(qt->isPointerType())
+    return qt->getPointeeType().getCanonicalType();
+
+  auto decl = getSafePtrDecl(qt);
+
+  assert(decl);
+  assert(decl->hasDefinition());
+
+  auto& args = decl->getTemplateArgs();
+  
+  assert(args.size() >= 1);
+
+  auto& arg0 = args.get(0);
+  
+  assert(arg0.getKind() == TemplateArgument::Type);
+
+  return arg0.getAsType().getCanonicalType();;
+}
+
+
 
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
-  return true;
- 
-  // assert(isNakedPointerType(qt));
-  
-  // qt = qt.getCanonicalType();
 
-  // auto decl = qt->getAsCXXRecordDecl();
+  qt = qt.getCanonicalType();
 
-  // if (!decl || !decl->hasDefinition())
-  //   return false;
+  assert(isNakedPointerType(qt));
+  QualType pointee = getPointeeType(qt);
 
-  // // first verify if is a well known class,
-  // auto name = decl->getQualifiedNameAsString();
-  // if (!isNakedPtrName(name))
-  //   return false;
-
-  // if (auto t = qt->getAs<TemplateSpecializationType>()) {
-    
-  //   if(t->getNumArgs() >= 1) {
-
-  //     auto argt = t->getArg(0).getAsType();
-  //     if(isSafeType(argt)) {
-  //       return true;
-  //     }
-  //   }
-  // }
-  //   t->getAsCXXRecordDecl();
-  //   t->get
-
-  //     template
-  //     //TODO verify template type, it must be safe      
-  //     return true;
-  //   }
-  // }
-  
-  //   //t->dump();
-  // return false;
+  return isSafeType(pointee);
 }
 
 
 
 bool isNakedPointerType(QualType qt) {
   
-  assert(!isSafeType(qt));
+  auto decl = getSafePtrDecl(qt);
+  if(!decl)
+    return false;
 
-  if (qt->isRecordType()) {
-    auto decl = qt->getAsCXXRecordDecl();
-
-    if (!decl || !decl->hasDefinition())
-      return false;
-
-    // first verify if is a well known class,
-    auto name = decl->getQualifiedNameAsString();
-    if (isNakedPtrName(name))
-      return true;
-  }
-  
-    //t->dump();
-  return false;
+  auto name = decl->getQualifiedNameAsString();
+  return isNakedPtrName(name);
 }
 
+
+bool isSafePtrType(QualType qt) {
+
+  auto decl = getSafePtrDecl(qt);
+  if(!decl)
+    return false;
+
+  auto name = decl->getQualifiedNameAsString();
+  return isSafePtrName(name);
+}
 
 
 bool isSafeRecord(const CXXRecordDecl *decl) {
@@ -400,41 +427,55 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
 
   //until properly updated for naked_ptr template
   return true;
-
   // out.dump();
   // arg.dump();
-  assert(out.isCanonical());
-  assert(arg.isCanonical());
 
-  const Type *t = out.getTypePtrOrNull();
-  if (!t || !t->isPointerType())
+  if(isSafeType(arg))
     return false;
 
-  auto qt2 = t->getPointeeType();
-  const Type *t2 = qt2.getTypePtrOrNull();
-  if (!t2)
-    return false;
-
-  const Type *targ = arg.getTypePtrOrNull();
-  if (!(targ && (targ->isPointerType() || targ->isReferenceType())))
-    return false;
-
-  auto qt2arg = targ->getPointeeType();
-  const Type *t2arg = qt2arg.getTypePtrOrNull();
-  if (!t2arg)
-    return false;
-
-  // assume non builtins, can generate any kind of naked pointers
-  if (!t2arg->isBuiltinType())
+  if(isNakedPointerType(arg))
+    return true;
+  
+  if(isNakedStructType(arg))
+    return true;
+    
+  if(arg->isReferenceType())
     return true;
 
-  if (t2arg != t2)
-    return false;
-  else {
-    // qt2.dump();
-    // qt2arg.dump();
-    return qt2.isAtLeastAsQualifiedAs(qt2arg);
-  }
+  if(arg->isPointerType())
+    return true;
+
+  return false;
+  //TODO fix type
+  // const Type *t = out.getTypePtrOrNull();
+  // if (!t || !t->isPointerType())
+  //   return false;
+
+  // auto qt2 = t->getPointeeType();
+  // const Type *t2 = qt2.getTypePtrOrNull();
+  // if (!t2)
+  //   return false;
+
+  // const Type *targ = arg.getTypePtrOrNull();
+  // if (!(targ && (targ->isPointerType() || t)))
+  //   return false;
+
+  // auto qt2arg = targ->getPointeeType();
+  // const Type *t2arg = qt2arg.getTypePtrOrNull();
+  // if (!t2arg)
+  //   return false;
+
+  // // assume non builtins, can generate any kind of naked pointers
+  // if (!t2arg->isBuiltinType())
+  //   return true;
+
+  // if (t2arg != t2)
+  //   return false;
+  // else {
+  //   // qt2.dump();
+  //   // qt2arg.dump();
+  //   return qt2.isAtLeastAsQualifiedAs(qt2arg);
+  // }
 }
 
 bool NakedPtrScopeChecker::checkStack2StackAssignment(const Decl *fromDecl) {
@@ -524,6 +565,9 @@ bool NakedPtrScopeChecker::checkCallExpr(const CallExpr *call) {
       return false;
     }
 
+    if(isSafePtrType(callee->getBase()->getType()))
+      return true;
+
     if(!checkExpr(callee->getBase())) {
         return false;
     }
@@ -544,6 +588,10 @@ bool NakedPtrScopeChecker::checkCallExpr(const CallExpr *call) {
       assert(false);
       return false;
     }
+
+    if(isSafePtrType((*it)->getType()))
+      return true;
+
     if (!checkExpr(*it)) {
       return false;
     }
