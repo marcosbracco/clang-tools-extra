@@ -29,7 +29,7 @@ bool isSafeName(const std::string &Name) {
   return isSafePtrName(Name) ||
   Name == "nodecpp::net::Socket" ||
          Name == "nodecpp::net::Server" || Name == "nodecpp::net::Address" ||
-         Name == "nodecpp::net::SocketTBase";
+         Name == "nodecpp::net::SocketTBase" || Name == "nodecpp::Buffer";
 }
 
 bool isNakedStructName(const std::string &Name) {

@@ -138,6 +138,18 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
+  if(qt->isReferenceType()) {
+    if(!isSafeType(qt->getPointeeType().getCanonicalType())) {
+      diag(var->getLocation(), "Unsafe reference declaration");
+      return;
+    }
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      diag(var->getLocation(), "may_extend not implemented for references");
+      return;
+    }
+    return;
+  }
+
   diag(var->getLocation(), "unsafe type at variable declaration");
   return;
 }
