@@ -19,8 +19,6 @@ namespace nodecpp {
 
 void NoCastCheck::registerMatchers(MatchFinder *Finder) {
 
-  Finder->addMatcher(cxxConstCastExpr().bind("cast"), this);
-
   Finder->addMatcher(cxxStaticCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
 //  Finder->addMatcher(cxxStaticCastExpr(allOf( hasDestinationType(referenceType()), unless(hasDestinationType(rValueReferenceType())) )).bind("cast"), this);
   Finder->addMatcher(cxxStaticCastExpr( hasDestinationType(lValueReferenceType()) ).bind("cast"), this);

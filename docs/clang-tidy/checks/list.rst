@@ -176,6 +176,7 @@ Clang-Tidy Checks
    mpi-buffer-deref
    mpi-type-mismatch
    nodecpp-array-type
+   nodecpp-const
    nodecpp-may-extend-decl
    nodecpp-may-extend-lambda
    nodecpp-naked-assignment

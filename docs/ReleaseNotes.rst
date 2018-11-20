@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-const
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-const.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-raw-pointer-dereference
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-pointer-dereference.html>`_ check
 
