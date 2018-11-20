@@ -19,19 +19,22 @@ namespace nodecpp {
 
 void StaticStorageCheck::registerMatchers(MatchFinder *Finder) {
 
-//  if (!getLangOpts().CPlusPlus)
-//    return;
- 
   Finder->addMatcher(varDecl(hasStaticStorageDuration(), unless(isConstexpr())).bind("decl"), this);
   Finder->addMatcher(varDecl(hasThreadStorageDuration()).bind("decl"), this);
 }
 
 void StaticStorageCheck::check(const MatchFinder::MatchResult &Result) {
 
-  const auto *MatchedDecl = Result.Nodes.getNodeAs<VarDecl>("decl");
+  auto decl = Result.Nodes.getNodeAs<VarDecl>("decl");
+  if(decl->isConstexpr())
+    return;
 
-  diag(MatchedDecl->getLocation(),
-       "do not use global, static or thread_local variables");
+  auto qt = decl->getType().getCanonicalType();
+  if(qt.isConstQualified() && qt->isBuiltinType())
+    return;
+
+  diag(decl->getLocation(),
+       "(S3) global, static or thread_local variables are prohibited");
       //<< MatchedDecl
       //<< FixItHint::CreateInsertion(MatchedDecl->getLocation(), "awesome_");
 }
