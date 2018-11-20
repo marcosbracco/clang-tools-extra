@@ -18,6 +18,7 @@ add_clang_library(clangTidyNodeCppModule
   RawPointerDereferenceCheck.cpp
   StaticStorageCheck.cpp
   StdFunctionCheck.cpp
+  UnionCheck.cpp
   VarDeclCheck.cpp
 
   LINK_LIBS

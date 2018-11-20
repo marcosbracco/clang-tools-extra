@@ -25,6 +25,7 @@
 #include "RawPointerDereferenceCheck.h"
 #include "StaticStorageCheck.h"
 #include "StdFunctionCheck.h"
+#include "UnionCheck.h"
 #include "VarDeclCheck.h"
 
 namespace clang {
@@ -65,6 +66,8 @@ public:
         "nodecpp-static-storage");
     CheckFactories.registerCheck<StdFunctionCheck>(
         "nodecpp-std-function");
+    CheckFactories.registerCheck<UnionCheck>(
+        "nodecpp-union");
     CheckFactories.registerCheck<VarDeclCheck>(
         "nodecpp-var-decl");
   }

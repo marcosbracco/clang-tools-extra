@@ -189,6 +189,7 @@ Clang-Tidy Checks
    nodecpp-raw-pointer-dereference
    nodecpp-static-storage
    nodecpp-std-function
+   nodecpp-union
    nodecpp-var-decl-func
    nodecpp-var-decl
    objc-avoid-nserror-init

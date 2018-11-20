@@ -70,6 +70,15 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   auto qt = var->getType().getCanonicalType();
+  
+  if(auto u = isUnionType(qt)) {
+    if(!checkUnion(u, this))
+      diag(var->getLocation(), "referenced from here", DiagnosticIDs::Note);
+
+    return;
+  }
+
+  
   if (isSafeType(qt)) {
     return;
   }

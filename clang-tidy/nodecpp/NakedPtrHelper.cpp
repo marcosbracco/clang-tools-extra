@@ -17,6 +17,11 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
+void diag(ClangTidyCheck *check, SourceLocation loc, StringRef message) {
+  if(check)
+    check->diag(loc, message);
+}
+
 bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr";
 }
@@ -203,8 +208,6 @@ bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
 
 bool isRawPointerType(QualType qt) {
 
-  assert(!isSafeType(qt));
-
   return qt.getCanonicalType()->isPointerType();
 }
 
@@ -302,6 +305,9 @@ bool isSafeRecord(const CXXRecordDecl *decl) {
   else if (isUnsafeName(name))
     return false;
 
+  if(decl->isUnion()) {
+    return checkUnion(decl, nullptr);
+  }
 
   auto F = decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
@@ -339,6 +345,42 @@ bool isSafeType(QualType qt) {
     return false;
   }
 }
+
+const CXXRecordDecl* isUnionType(QualType qt) {
+
+  assert(qt.isCanonical());
+
+  auto rd = qt->getAsCXXRecordDecl();
+  return (rd && rd->hasDefinition() && rd->isUnion()) ? rd : nullptr;
+}
+
+bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check) {
+
+  assert(decl);
+  assert(decl->hasDefinition());
+  assert(decl->isUnion());
+
+
+  auto f = decl->fields();
+  for (auto it = f.begin(); it != f.end(); ++it) {
+
+      auto qt = (*it)->getType().getCanonicalType();
+      if(isRawPointerType(qt)) {
+
+        diag(check, (*it)->getLocation(), "(S1.4) raw pointers inside unions are prohibited");
+        return false;
+      }
+      else if(!qt->isBuiltinType() && !qt->isTemplateTypeParmType()) {
+        diag(check, (*it)->getLocation(), "(S1.4) non-primitives inside unions are prohibited");
+        return false;
+      }
+  }
+
+  // finally we are safe!
+  return true;
+}
+
+
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
 

@@ -26,6 +26,7 @@ bool isNakedStructName(const std::string &Name);
 bool isNakedPtrName(const std::string& name);
 bool isUnsafeName(const std::string &Name);
 
+
 bool isParamOnlyType(QualType qt);
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
@@ -42,6 +43,10 @@ bool isSafePtrType(QualType qt);
 
 bool isSafeRecord(const CXXRecordDecl *decl);
 bool isSafeType(QualType qt);
+
+const CXXRecordDecl* isUnionType(QualType qt);
+bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check);
+
 
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
