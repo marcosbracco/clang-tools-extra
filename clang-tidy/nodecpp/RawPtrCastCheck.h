@@ -1,4 +1,4 @@
-//===--- NoCastCheck.h - clang-tidy------------------------------*- C++ -*-===//
+//===--- RawPtrCastCheck.h - clang-tidy------------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-no-cast.html
-class NoCastCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-ptr-cast.html
+class RawPtrCastCheck : public ClangTidyCheck {
 public:
-  NoCastCheck(StringRef Name, ClangTidyContext *Context)
+  RawPtrCastCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;

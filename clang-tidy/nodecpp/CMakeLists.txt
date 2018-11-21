@@ -12,11 +12,11 @@ add_clang_library(clangTidyNodeCppModule
   NakedPtrReturnCheck.cpp
   NakedStructCheck.cpp
   NewExprCheck.cpp
-  NoCastCheck.cpp
   NodeCppTidyModule.cpp
   PtrArithmeticCheck.cpp
   RawPointerAssignmentCheck.cpp
   RawPointerDereferenceCheck.cpp
+  RawPtrCastCheck.cpp
   StaticStorageCheck.cpp
   StdFunctionCheck.cpp
   UnionCheck.cpp

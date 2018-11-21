@@ -40,6 +40,7 @@ struct NakedStr {
 void nakedFunc() {
 	
 	int* i = nullptr; //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: (S1.3)
 
 	NakedStr naked; //ok
 }
@@ -56,6 +57,7 @@ struct Bad3 {
 	int* ptr;
 
 	void set(int* ptr);
+// CHECK-MESSAGES: :[[@LINE-1]]:16: warning: (S1.3)
 };
 
 void badFunc() {
@@ -79,7 +81,10 @@ class Sock {};
 class Safe {
 
 	void mayExtendCallback(Sock* dontExtend, Sock* sock [[nodecpp::may_extend_to_this]]) {
+// CHECK-MESSAGES: :[[@LINE-1]]:31: warning: (S1.3)
+// CHECK-MESSAGES: :[[@LINE-2]]:49: warning: (S1.3)
 		Sock* other [[nodecpp::may_extend_to_this]] = sock;
+// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: (S1.3)
 		Sock* other2 [[nodecpp::may_extend_to_this]] = dontExtend; //bad donExtend is not valid initializer
 // CHECK-MESSAGES: :[[@LINE-1]]:9: warning: initializer not allowed to may_extend declaration [nodecpp-var-decl]
 	}

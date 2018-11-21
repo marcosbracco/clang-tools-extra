@@ -111,8 +111,10 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
     
     //params don't need initializer
-    if(isParam)
+    if(isParam) {
+      diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
       return;
+    }
     
     auto e = var->getInit();
     if(!e) {
@@ -129,6 +131,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
       }
     }
     //this is all for raw pointer
+    diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
     return;
   }
 

@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-no-cast' check was renamed to `nodecpp-raw-ptr-cast
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-ptr-cast.html>`_
+
 - New `nodecpp-asm
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-asm.html>`_ check
 

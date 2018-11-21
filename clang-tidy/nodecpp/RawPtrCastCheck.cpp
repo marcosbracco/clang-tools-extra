@@ -1,4 +1,4 @@
-//===--- NoCastCheck.cpp - clang-tidy--------------------------------------===//
+//===--- RawPtrCastCheck.cpp - clang-tidy----------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "NoCastCheck.h"
+#include "RawPtrCastCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,7 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void NoCastCheck::registerMatchers(MatchFinder *Finder) {
+void RawPtrCastCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(cxxStaticCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
 //  Finder->addMatcher(cxxStaticCastExpr(allOf( hasDestinationType(referenceType()), unless(hasDestinationType(rValueReferenceType())) )).bind("cast"), this);
@@ -30,11 +30,11 @@ void NoCastCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(cStyleCastExpr(hasDestinationType(referenceType())).bind("cast"), this);
 }
 
-void NoCastCheck::check(const MatchFinder::MatchResult &Result) {
+void RawPtrCastCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *MatchedCast = Result.Nodes.getNodeAs<ExplicitCastExpr>("cast");
   
-  diag(MatchedCast->getExprLoc(), "do not use cast");
+  diag(MatchedCast->getExprLoc(), "(S1.1) casts are prohibited");
 }
 
 } // namespace nodecpp

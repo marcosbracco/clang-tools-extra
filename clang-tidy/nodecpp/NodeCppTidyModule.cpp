@@ -20,10 +20,10 @@
 #include "NakedPtrReturnCheck.h"
 #include "NakedStructCheck.h"
 #include "NewExprCheck.h"
-#include "NoCastCheck.h"
 #include "PtrArithmeticCheck.h"
 #include "RawPointerAssignmentCheck.h"
 #include "RawPointerDereferenceCheck.h"
+#include "RawPtrCastCheck.h"
 #include "StaticStorageCheck.h"
 #include "StdFunctionCheck.h"
 #include "UnionCheck.h"
@@ -57,14 +57,14 @@ public:
         "nodecpp-naked-struct");
     CheckFactories.registerCheck<NewExprCheck>(
         "nodecpp-new-expr");
-    CheckFactories.registerCheck<NoCastCheck>(
-        "nodecpp-no-cast");
     CheckFactories.registerCheck<PtrArithmeticCheck>(
         "nodecpp-ptr-arithmetic");
     CheckFactories.registerCheck<RawPointerAssignmentCheck>(
         "nodecpp-raw-pointer-assignment");
     CheckFactories.registerCheck<RawPointerDereferenceCheck>(
         "nodecpp-raw-pointer-dereference");
+    CheckFactories.registerCheck<RawPtrCastCheck>(
+        "nodecpp-raw-ptr-cast");
     CheckFactories.registerCheck<StaticStorageCheck>(
         "nodecpp-static-storage");
     CheckFactories.registerCheck<StdFunctionCheck>(

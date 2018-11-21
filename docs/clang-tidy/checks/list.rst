@@ -184,10 +184,10 @@ Clang-Tidy Checks
    nodecpp-naked-ptr-return
    nodecpp-naked-struct
    nodecpp-new-expr
-   nodecpp-no-cast
    nodecpp-ptr-arithmetic
    nodecpp-raw-pointer-assignment
    nodecpp-raw-pointer-dereference
+   nodecpp-raw-ptr-cast
    nodecpp-static-storage
    nodecpp-std-function
    nodecpp-union
