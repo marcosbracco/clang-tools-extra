@@ -19,31 +19,30 @@ namespace nodecpp {
 
 void RawPointerDereferenceCheck::registerMatchers(MatchFinder *Finder) {
 
-  Finder->addMatcher(memberExpr(isArrow()).bind("arr"), this);
+  Finder->addMatcher(memberExpr(isArrow()).bind("arrow"), this);
 
   Finder->addMatcher(unaryOperator(hasOperatorName("*"),
                                    hasUnaryOperand(hasType(pointerType())))
-                         .bind("op"),
+                         .bind("star"),
                      this);
 }
 
 void RawPointerDereferenceCheck::check(const MatchFinder::MatchResult &Result) {
 
-  auto expr = Result.Nodes.getNodeAs<MemberExpr>("arr");
-  if(expr) {
+  if(auto expr = Result.Nodes.getNodeAs<MemberExpr>("arrow")) {
     auto base = expr->getBase()->IgnoreParenImpCasts();
     if(isa<CXXThisExpr>(base))
       return;
     else if(isa<CallExpr>(base))
       return;
 
-    diag(expr->getExprLoc(), "do not dereference raw pointer");
+    diag(expr->getExprLoc(), "(S1.2) dereference of raw pointers is prohibited");
     return;
   }
+  else if(auto expr = Result.Nodes.getNodeAs<UnaryOperator>("star")) {
 
-  auto op = Result.Nodes.getNodeAs<UnaryOperator>("op");
-
-  diag(op->getExprLoc(), "do not dereference raw pointer");
+    diag(expr->getExprLoc(), "(S1.2) dereference of raw pointers is prohibited");
+  }
 }
 
 } // namespace nodecpp
