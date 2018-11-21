@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-asm
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-asm.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-union
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-union.html>`_ check
 
