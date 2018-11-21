@@ -17,10 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void diag(ClangTidyCheck *check, SourceLocation loc, StringRef message) {
-  if(check)
-    check->diag(loc, message);
-}
+DiagHelper NullDiagHelper;
 
 bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr";
@@ -94,7 +91,7 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
   auto f = decl->fields();
   for (auto it = f.begin(); it != f.end(); ++it) {
 
-    auto qt = (*it)->getType(); 
+    auto qt = (*it)->getType().getCanonicalType(); 
     if(isSafeType(qt))
       continue;
 
@@ -169,14 +166,12 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
 }
 
 
-bool isNakedStructType(QualType qt) {
+bool isNakedStructType(QualType qt, bool allowImplicit) {
 
   assert(!isSafeType(qt));
-
-  qt = qt.getCanonicalType();
+  assert(qt.isCanonical());
  
-  if (qt->isRecordType()) {
-    auto decl = qt->getAsCXXRecordDecl();
+  if (auto decl = qt->getAsCXXRecordDecl()) {
 
     if (!decl || !decl->hasDefinition())
       return false;
@@ -190,6 +185,9 @@ bool isNakedStructType(QualType qt) {
     // must have verified it
     if(decl->hasAttr<NodeCppNakedStructAttr>())
       return true;
+
+    if(allowImplicit)
+      return checkNakedStructRecord(decl, nullptr);
   }
   
     //t->dump();
@@ -198,10 +196,10 @@ bool isNakedStructType(QualType qt) {
 
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
   
-  qt = qt.getCanonicalType();
+  assert(qt.isCanonical());
 
   assert(isRawPointerType(qt));
-  QualType pointee = qt->getPointeeType();
+  QualType pointee = qt->getPointeeType().getCanonicalType();
 
   return isSafeType(pointee);
 }
@@ -237,6 +235,8 @@ const ClassTemplateSpecializationDecl* getSafePtrDecl(QualType qt) {
 
 QualType getPointeeType(QualType qt) {
 
+  assert(qt.isCanonical());
+
   if(qt->isPointerType())
     return qt->getPointeeType().getCanonicalType();
 
@@ -253,10 +253,17 @@ QualType getPointeeType(QualType qt) {
   
   assert(arg0.getKind() == TemplateArgument::Type);
 
-  return arg0.getAsType().getCanonicalType();;
+  return arg0.getAsType().getCanonicalType();
 }
 
+QualType unwrapConstRefType(QualType qt) {
 
+  assert(qt.isCanonical());
+  if(qt->isReferenceType() && qt.isConstQualified())
+    return qt->getPointeeType().getCanonicalType();
+
+  return qt;
+}
 
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
 
@@ -292,7 +299,7 @@ bool isSafePtrType(QualType qt) {
 }
 
 
-bool isSafeRecord(const CXXRecordDecl *decl) {
+bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
 
   if (!decl || !decl->hasDefinition()) {
     return false;
@@ -311,16 +318,21 @@ bool isSafeRecord(const CXXRecordDecl *decl) {
 
   auto F = decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
-
-    if (!isSafeType((*It)->getType()))
+    auto ft = (*It)->getType().getCanonicalType();
+    if (!isSafeType(ft, dh)) {
+      dh.diag((*It)->getLocation(), "member is not safe");
       return false;
+    }
   }
 
   auto B = decl->bases();
   for (auto It = B.begin(); It != B.end(); ++It) {
 
-    if (!isSafeType((*It).getType()))
+    auto bt = It->getType().getCanonicalType();
+    if (!isSafeType(bt, dh)) {
+      dh.diag((*It).getBaseTypeLoc(), "base class is not safe");
       return false;
+    }
   }
 
   // finally we are safe!
@@ -328,15 +340,18 @@ bool isSafeRecord(const CXXRecordDecl *decl) {
 }
 
 
-bool isSafeType(QualType qt) {
+bool isSafeType(QualType qt, DiagHelper& dh) {
 
-  qt = qt.getCanonicalType();
-  if (qt->isReferenceType() || qt->isPointerType()) {
-      return false;
+  assert(qt.isCanonical());
+
+  if (qt->isReferenceType()) {
+    return false;
+  } else if(qt->isPointerType()) {
+    return false;
   } else if (qt->isBuiltinType()) {
     return true;
-  } else if (qt->isRecordType()) {
-    return isSafeRecord(qt->getAsCXXRecordDecl());
+  } else if (auto rd = qt->getAsCXXRecordDecl()) {
+    return isSafeRecord(rd, dh);
   } else if (qt->isTemplateTypeParmType()) {
     // we will take care at instantiation
     return true;
@@ -367,11 +382,13 @@ bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check) {
       auto qt = (*it)->getType().getCanonicalType();
       if(isRawPointerType(qt)) {
 
-        diag(check, (*it)->getLocation(), "(S1.4) raw pointers inside unions are prohibited");
+        if(check)
+          check->diag((*it)->getLocation(), "(S1.4) raw pointers inside unions are prohibited");
         return false;
       }
       else if(!qt->isBuiltinType() && !qt->isTemplateTypeParmType()) {
-        diag(check, (*it)->getLocation(), "(S1.4) non-primitives inside unions are prohibited");
+        if(check)
+          check->diag((*it)->getLocation(), "(S1.4) non-primitives inside unions are prohibited");
         return false;
       }
   }

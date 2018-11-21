@@ -42,7 +42,6 @@ void nakedFunc() {
 	int* i = nullptr; //bad
 
 	NakedStr naked; //ok
-// CHECK-MESSAGES: :[[@LINE-1]]:11: warning: unsafe type at variable declaration [nodecpp-var-decl]
 }
 
 struct Bad1 {

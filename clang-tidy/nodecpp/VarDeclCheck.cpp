@@ -58,6 +58,8 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   auto var = Result.Nodes.getNodeAs<VarDecl>("var");
   assert(var);
 
+  // any type will also pop-up at constructor and operator assignment
+  // declaration, we let both of them go
   auto p = getParentMethod(Result.Context, var);
   if(p) {
     if(isa<CXXConstructorDecl>(p))
@@ -69,7 +71,12 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     }
   }
 
+  bool isParam = isa<ParmVarDecl>(var);
   auto qt = var->getType().getCanonicalType();
+
+  //unwrap const ref
+  if(qt->isReferenceType() && qt.isConstQualified())
+    qt = qt->getPointeeType().getCanonicalType();
   
   if(auto u = isUnionType(qt)) {
     if(!checkUnion(u, this))
@@ -78,12 +85,22 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  
   if (isSafeType(qt)) {
     return;
   }
 
-  if(isa<ParmVarDecl>(var) && isParamOnlyType(qt))
+  if(qt->isReferenceType()) {
+    //non-const reference only from safe types
+    QualType inner = qt->getPointeeType().getCanonicalType();
+    if(!isSafeType(inner)) {
+      diag(var->getLocation(), "(S5.3) non-const reference is prohibited");
+    }
+
+    //this is all for non-const references
+    return;
+  }
+
+  if(isParam && isParamOnlyType(qt))
     return;
 
   if(isRawPointerType(qt)) {
@@ -94,7 +111,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
     
     //params don't need initializer
-    if(isa<ParmVarDecl>(var))
+    if(isParam)
       return;
     
     auto e = var->getInit();
@@ -104,7 +121,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     }
 
     if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      //then we must check scope
+      //then we must check scope of initializer
       auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
       if(!sc.checkExpr(e)) {
         diag(var->getLocation(), "initializer not allowed to may_extend declaration");
@@ -115,7 +132,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  //a variable not a parameter
+
   if(isNakedPointerType(qt)) {
 
     if(!checkNakedPointerType(qt, this)) {
@@ -138,7 +155,8 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   if(isNakedStructType(qt)) {
-    // check constructor
+
+    //naked struct internal is checked at other place
     if(var->hasAttr<NodeCppMayExtendAttr>()) {
       diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
     }
@@ -147,19 +165,21 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  if(qt->isReferenceType()) {
-    if(!isSafeType(qt->getPointeeType().getCanonicalType())) {
-      diag(var->getLocation(), "Unsafe reference declaration");
-      return;
-    }
+  if(isImplicitNakedStructType(qt)) {
+
+    //naked struct internal is checked at other place
     if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      diag(var->getLocation(), "may_extend not implemented for references");
-      return;
+      diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
     }
+
+    // this is all for iplicit naked struct
     return;
   }
 
-  diag(var->getLocation(), "unsafe type at variable declaration");
+  auto dh = DiagHelper(this);
+  dh.diag(var->getLocation(), "unsafe type at variable declaration");
+  isSafeType(qt, dh);
+
   return;
 }
 

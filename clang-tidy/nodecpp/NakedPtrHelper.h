@@ -16,6 +16,26 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
+
+class DiagHelper {
+  ClangTidyCheck *check = nullptr;
+  DiagnosticIDs::Level level = DiagnosticIDs::Warning;
+public:
+  DiagHelper() {}
+  DiagHelper(ClangTidyCheck *check)
+  :check(check) {}
+
+  void diag(SourceLocation loc, StringRef message) {
+    if(check) {
+      DiagnosticIDs::Level nextLevel = DiagnosticIDs::Note;
+      std::swap(level, nextLevel);
+      check->diag(loc, message, nextLevel);
+    }
+  }
+};
+
+extern DiagHelper NullDiagHelper;
+
 /// FIXME: Write a short description.
 ///
 bool isOwnerPtrName(const std::string &Name);
@@ -30,7 +50,11 @@ bool isUnsafeName(const std::string &Name);
 bool isParamOnlyType(QualType qt);
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
-bool isNakedStructType(QualType qt);
+bool isNakedStructType(QualType qt, bool allowImplicit = false);
+inline
+bool isImplicitNakedStructType(QualType qt) {
+  return isNakedStructType(qt, true);
+}
 
 QualType getPointeeType(QualType qt);
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);
@@ -41,8 +65,8 @@ bool isRawPointerType(QualType qt);
 const ClassTemplateSpecializationDecl* getSafePtrDecl(QualType qt);
 bool isSafePtrType(QualType qt);
 
-bool isSafeRecord(const CXXRecordDecl *decl);
-bool isSafeType(QualType qt);
+bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh = NullDiagHelper);
+bool isSafeType(QualType qt, DiagHelper& dh = NullDiagHelper);
 
 const CXXRecordDecl* isUnionType(QualType qt);
 bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check);
@@ -97,6 +121,9 @@ public:
   static
   NakedPtrScopeChecker makeParamScopeChecker(ClangTidyCheck *check);
 };
+
+
+
 
 
 } // namespace nodecpp
