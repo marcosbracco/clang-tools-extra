@@ -26,9 +26,9 @@ void StdFunctionCheck::registerMatchers(MatchFinder *Finder) {
 
 void StdFunctionCheck::check(const MatchFinder::MatchResult &Result) {
   // FIXME: Add callback implementation.
-  auto expr = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("expr");
+  // auto expr = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("expr");
   
-  diag(expr->getExprLoc(), "found here");
+  // diag(expr->getExprLoc(), "found here");
 
 }
 

@@ -31,6 +31,16 @@ void CallExprCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   auto decl = expr->getDirectCallee();
+  SourceManager* manager = Result.SourceManager;
+  auto eLoc = manager->getExpansionLoc(decl->getLocStart());
+
+  if(!eLoc.isInvalid()) {
+    if(!manager->isInSystemHeader(eLoc)) {
+      // this is in safe code, then is ok
+      return;
+    }
+  }
+
   std::string name = decl->getQualifiedNameAsString();
   if(name.substr(0, 9) == "nodecpp::")
     return;

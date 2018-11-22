@@ -23,8 +23,12 @@ bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr";
 }
 
+bool isOwningPtrRecord(const CXXRecordDecl *decl) {
+  return  decl->getQualifiedNameAsString() == "nodecpp::owning_ptr";
+}
+
 bool isSafePtrName(const std::string &Name) {
-  return isOwnerPtrName(Name) || Name == "nodecpp::soft_ptr";
+  return isOwnerPtrName(Name) || Name == "nodecpp::soft_ptr" || Name == "nodecpp::safe_ptr";
 }
 
 bool isSafeName(const std::string &Name) {
@@ -168,7 +172,6 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
 
 bool isNakedStructType(QualType qt, bool allowImplicit) {
 
-  assert(!isSafeType(qt));
   assert(qt.isCanonical());
  
   if (auto decl = qt->getAsCXXRecordDecl()) {
@@ -408,12 +411,15 @@ const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
   if (sIt == sList.end())
     return nullptr;
 
-  if (auto p = sIt->get<ParenExpr>())
-    return getParentExpr(context, p);
-  else if (auto p = sIt->get<ImplicitCastExpr>())
+  auto p = sIt->get<Expr>();
+  if(!p)
+    return nullptr;
+    
+  if (isa<ParenExpr>(p) || isa<ImplicitCastExpr>(p) 
+    || isa<MaterializeTemporaryExpr>(p))
     return getParentExpr(context, p);
   else
-    return sIt->get<Expr>();
+    return p;
 }
 
 const Expr *ignoreTemporaries(const Expr *expr) {

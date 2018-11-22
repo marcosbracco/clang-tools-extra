@@ -25,23 +25,58 @@ void NewExprCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(
       cxxNewExpr().bind("new"), this);
+  Finder->addMatcher(
+      cxxDeleteExpr().bind("delete"), this);
+
+  Finder->addMatcher(
+      callExpr(callee(functionDecl(hasName("nodecpp::make_owning"))))
+          .bind("make"),
+      this);
 }
 
 void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
 
-  auto m = Result.Nodes.getNodeAs<CXXNewExpr>("new");
+  if(auto expr = Result.Nodes.getNodeAs<CXXNewExpr>("new")) {
 
-  if (m->isArray()) {
-    diag(m->getLocStart(), "do not use array new expression");
-    return;
-  } else if (m->getNumPlacementArgs() != 0) {
-    diag(m->getLocStart(), "do not use placement new expression");
-    return;
+    diag(expr->getExprLoc(), "(S4) operator new is prohibited");
   }
+  else if(auto expr = Result.Nodes.getNodeAs<CXXDeleteExpr>("delete")) {
 
-  if (!isSafeType(m->getAllocatedType())) {
-    diag(m->getLocStart(), "type is not safe for heap allocation");
-    return;
+    diag(expr->getExprLoc(), "(S4) operator delete is prohibited");
+  }
+  else if(auto expr = Result.Nodes.getNodeAs<CallExpr>("make")) {
+
+    auto parent = getParentExpr(Result.Context, expr);
+    if (parent) {
+//      parent->dumpColor();
+      if (auto constructor = dyn_cast<CXXConstructExpr>(parent)) {
+        auto decl = constructor->getConstructor()->getParent();
+
+        if (isOwningPtrRecord(decl)) {
+          // this is ok!
+          return;
+        }
+      } else if (auto member = dyn_cast<CXXMemberCallExpr>(parent)) {
+
+        auto decl = member->getMethodDecl()->getParent();
+        if(isOwningPtrRecord(decl)) {
+          // this is ok!
+          return;
+        }
+      }
+      else if(auto op = dyn_cast<CXXOperatorCallExpr>(parent)) {
+        auto opDecl = dyn_cast<CXXMethodDecl>(op->getDirectCallee());
+        if (opDecl && isOwningPtrRecord(opDecl->getParent())) {
+          if(opDecl->isMoveAssignmentOperator() 
+            || opDecl->isCopyAssignmentOperator()) {
+              // this is ok!
+              return;
+          }
+        }
+      }
+    }
+
+    diag(expr->getExprLoc(), "(S4.1) result of make_owning must be assigned to owning_ptr");
   }
 
   // if (isNoInstanceType(m->getAllocatedType())) {
@@ -51,7 +86,7 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
   // }
 
   // type is ok, verify is owned by unique_ptr
-
+/*
   auto parent = getParentExpr(Result.Context, m);
   if (parent) {
 //    parent->dumpColor();
@@ -74,8 +109,8 @@ void NewExprCheck::check(const MatchFinder::MatchResult &Result) {
       }
     }
   }
-
-  diag(m->getLocStart(), "new expresion must be owned by a unique_ptr");
+*/
+  //diag(m->getLocStart(), "new expresion must be owned by a unique_ptr");
 }
 
 } // namespace nodecpp

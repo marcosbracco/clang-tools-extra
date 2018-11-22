@@ -39,6 +39,7 @@ extern DiagHelper NullDiagHelper;
 /// FIXME: Write a short description.
 ///
 bool isOwnerPtrName(const std::string &Name);
+bool isOwningPtrRecord(const CXXRecordDecl *decl);
 bool isSafePtrName(const std::string &Name);
 
 bool isSafeName(const std::string &Name);
