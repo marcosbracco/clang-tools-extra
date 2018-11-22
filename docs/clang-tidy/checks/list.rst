@@ -177,6 +177,7 @@ Clang-Tidy Checks
    mpi-type-mismatch
    nodecpp-array-type
    nodecpp-asm
+   nodecpp-call-expr
    nodecpp-const
    nodecpp-may-extend-decl
    nodecpp-may-extend-lambda

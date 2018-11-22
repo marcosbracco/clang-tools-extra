@@ -2,6 +2,7 @@ set(LLVM_LINK_COMPONENTS support)
 
 add_clang_library(clangTidyNodeCppModule
   AsmCheck.cpp
+  CallExprCheck.cpp
   ConstCheck.cpp
   MayExtendDeclCheck.cpp
   MayExtendLambdaCheck.cpp

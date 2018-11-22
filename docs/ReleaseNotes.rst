@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-call-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-call-expr.html>`_ check
+
+  FIXME: add release notes.
+
 - The 'nodecpp-no-cast' check was renamed to `nodecpp-raw-ptr-cast
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-ptr-cast.html>`_
 

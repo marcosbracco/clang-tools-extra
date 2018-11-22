@@ -12,6 +12,7 @@
 #include "../ClangTidyModuleRegistry.h"
 #include "ArrayTypeCheck.h"
 #include "AsmCheck.h"
+#include "CallExprCheck.h"
 #include "ConstCheck.h"
 #include "MayExtendDeclCheck.h"
 #include "MayExtendLambdaCheck.h"
@@ -41,6 +42,8 @@ public:
         "nodecpp-array-type");
     CheckFactories.registerCheck<AsmCheck>(
         "nodecpp-asm");
+    CheckFactories.registerCheck<CallExprCheck>(
+        "nodecpp-call-expr");
     CheckFactories.registerCheck<ConstCheck>(
         "nodecpp-const");
     CheckFactories.registerCheck<MayExtendDeclCheck>(
