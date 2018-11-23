@@ -122,14 +122,6 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
       return;
     }
 
-    if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      //then we must check scope of initializer
-      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
-      if(!sc.checkExpr(e)) {
-        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
-        return;
-      }
-    }
     //this is all for raw pointer
     diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
     return;
@@ -143,16 +135,6 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
       return;
     }
     
-    if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      auto e = var->getInit();
-      //then we must check scope
-      auto sc = NakedPtrScopeChecker::makeThisScopeChecker(this);
-      if(!sc.checkExpr(e)) {
-        diag(var->getLocation(), "initializer not allowed to may_extend declaration");
-        return;
-      }
-    }
-
     //this is all for naked_ptr
     return;
   }

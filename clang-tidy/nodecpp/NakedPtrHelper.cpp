@@ -400,7 +400,34 @@ bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check) {
   return true;
 }
 
+bool isOsnPtrRecord(const CXXRecordDecl *decl) {
+  std::string name = decl->getQualifiedNameAsString();
 
+  return isSafePtrName(name) || isNakedPtrName(name);
+}
+
+const Expr* getBaseIfOsnPtrDerref(const Expr* expr) {
+
+  if(!expr)
+    return nullptr;
+
+  if(auto opCall = dyn_cast<CXXOperatorCallExpr>(expr)) {
+    if(auto opDecl = dyn_cast<CXXMethodDecl>(opCall->getDirectCallee())) {
+      if(isOsnPtrRecord(opDecl->getParent())) {
+        auto name = opDecl->getDeclName();
+        if(name.getNameKind() == DeclarationName::CXXOperatorName) {
+          auto op = name.getCXXOverloadedOperator();
+          if(op == OO_Star || op == OO_Arrow) {
+            assert(opCall->getNumArgs() > 0);
+            return opCall->getArg(0);
+          }
+        }
+      }
+    }
+  }
+  //TODO check for method get()
+  return nullptr;
+}
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr) {
 

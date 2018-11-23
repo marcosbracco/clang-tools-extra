@@ -71,6 +71,14 @@ public:
 	naked_ptr& operator=(const naked_ptr&) = default;
 	naked_ptr& operator=(naked_ptr&&) = default;
 
+	naked_ptr(const owning_ptr<T>& ow) 
+		:ptr(const_cast<T*>(ow.get())) {}
+	naked_ptr& operator=(const owning_ptr<T>& ow) { 
+		reset(const_cast<T*>(ow.get()));
+		return *this;
+	};
+
+
 	T* get() { return ptr; }
 	const T* get() const { return ptr; }
  	T* operator->() { return ptr; }

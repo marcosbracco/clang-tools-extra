@@ -72,7 +72,8 @@ bool isSafeType(QualType qt, DiagHelper& dh = NullDiagHelper);
 const CXXRecordDecl* isUnionType(QualType qt);
 bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check);
 
-
+bool isOsnPtrRecord(const CXXRecordDecl *decl);
+const Expr* getBaseIfOsnPtrDerref(const Expr* expr);
 
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
 const Expr *ignoreTemporaries(const Expr *expr);
