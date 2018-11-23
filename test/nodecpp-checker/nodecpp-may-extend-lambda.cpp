@@ -1,108 +1,81 @@
-// RUN: clang-tidy %s --checks=-*,nodecpp-may-extend-lambda -- -std=c++11 -nostdinc++ | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+// RUN: clang-tidy %s -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+
+#include <safe_ptr.h>
+
+using namespace nodecpp;
 
 
-namespace std {
-	template< class R, class... Args >
-	class function {
-		public:
-		template<class T>
-		function(T t) {}
-	};
-}
+class MyServer;
 
-struct Sock {};
-struct Bad {};
+struct Socket {
 
-void plainFunc() {}
+	void onPlain(naked_ptr<Socket> sk [[nodecpp::may_extend_to_this]], naked_ptr<MyServer> my [[nodecpp::may_extend_to_this]] );
+	void on(std::function<void()> cb [[nodecpp::may_extend_to_this]]);
+};
 
-struct Infra {
-	void plain(std::function<void()> func);
-
-	void onMayExtend(std::function<void()> func [[nodecpp::may_extend_to_this]]);
+struct SrvMember {
+	void onPlain(naked_ptr<MyServer> my [[nodecpp::may_extend_to_this]]);
+	void on(std::function<void(naked_ptr<Socket>)> cb [[nodecpp::may_extend_to_this]]);
 };
 
 
-struct SafeCode {
-	Infra infra;
+struct MyServer {
+	SrvMember srv;
 
-	void aMethod() {}
-	void aMethod(Sock* sock) {}
-	void aMethod(Bad* bad) {}
 
-	void m() {
-		int* p = nullptr;
+	void main() {
 
-		infra.onMayExtend([this]() { this->aMethod(); }); // ok,
+		srv.onPlain(this);
 
-		Bad* badPtr = nullptr;
-		infra.onMayExtend([this, badPtr]() { this->aMethod(badPtr);} ); //bad, 'badPtr' not safe 
-// CHECK-MESSAGES: :[[@LINE-1]]:28: warning: unsafe capture to extend scope [nodecpp-may-extend-lambda]
 
-		auto la = [this, badPtr]() { this->aMethod(badPtr);}; //ok, used without may_extend
-		infra.plain(la);		
+		srv.on([this](naked_ptr<Socket> sk [[nodecpp::owned_by_this]]){
+			sk->on([this, sk]() {
+				/* do something */
+			});
+		});
+	}
 
-		auto l = [this, badPtr]() { this->aMethod(badPtr);}; //bad, 'badPtr' used with may_extend
-// CHECK-MESSAGES: :[[@LINE-1]]:19: warning: unsafe capture to extend scope [nodecpp-may-extend-lambda]
-		infra.onMayExtend(l);		
-// CHECK-MESSAGES: :[[@LINE-1]]:21: note: referenced from here
+	void onConnect(naked_ptr<Socket> sk [[nodecpp::owned_by_this]] ) {
 
-		infra.onMayExtend(plainFunc); //ok function poninters always ok
+		sk->onPlain(sk, this);
+
 
 	}
 
-	void callback(Sock* sock) {
+	void onBad1(naked_ptr<Socket> ow1 [[nodecpp::owned_by_this]], naked_ptr<Socket> ow2 [[nodecpp::owned_by_this]] ) {
 
-		infra.onMayExtend([this, sock]() { this->aMethod(sock); }); // bad, 'sock is not safe to may_extend
-// CHECK-MESSAGES: :[[@LINE-1]]:28: warning: unsafe capture to extend scope [nodecpp-may-extend-lambda]
+		ow1->onPlain(ow2, this); //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:16: warning: is not safe
+		
+	}
+
+	void bad1(naked_ptr<Socket> dontExtend, naked_ptr<Socket> sock [[nodecpp::may_extend_to_this]]) {
+		sock->on([this, sock]() { }); // ok, now 'sock is safe
+
+		sock->on([this, dontExtend]() { }); //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:19: warning: unsafe capture to extend
+		dontExtend->on([]() { }); //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:15: warning: methods with attribute
 	}
 
 
-	void mayExtendCallback(Sock* dontExtend, Sock* sock [[nodecpp::may_extend_to_this]]) {
-		infra.onMayExtend([this, sock]() { this->aMethod(sock); }); // ok, now 'sock is safe
-
-		Sock* other [[nodecpp::may_extend_to_this]] = sock;
-		infra.onMayExtend([this, other]() { this->aMethod(other); }); // ok, 'other' is also safe
-
-		Sock* other2 [[nodecpp::may_extend_to_this]] = dontExtend; //bad donExtend is not valid initializer
-	}
-
-};
-
-struct Bad2 {
-	void bad(Infra infra) {
-		infra.onMayExtend([this]() { });// bad, infra is not a member
-// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: methods with [may_extend_to_this] attribute can be called only on members that share the lifetime of this [nodecpp-may-extend-lambda]
-	}
-};
-
-
-class Infra2 {
-public:
-	void on(std::function<void(Sock* sock)> f [[nodecpp::may_extend_to_this]]);
-};
-
-void func(std::function<void(Sock* sock)> f);
-
-class Safe {
-	Infra2 infra;
-	void m1() {
+	void bad2() {
 		int i;
-		auto l = [this, &i](Sock* sock) {};
+		auto l = [this, &i](naked_ptr<Socket> sock) {};
 // CHECK-MESSAGES: :[[@LINE-1]]:20: warning: unsafe capture to extend scope [nodecpp-may-extend-lambda]
-		infra.on(l);
-// CHECK-MESSAGES: :[[@LINE-1]]:12: note: referenced from here
+		srv.on(l);
+// CHECK-MESSAGES: :[[@LINE-1]]:10: note: referenced from here
 	} 
 
-	void m2() {
-		int i;
-		auto l = [this, i](Sock* sock) {};
-		infra.on(l);
+	void bad3(naked_ptr<Socket> sock) {
+		sock->on([this]() { });// bad, sock is not a member
+// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: methods with
 	}
 
-	void m3() {
-		int i;
-		auto l = [this, &i](Sock* sock) {};
-		func(l);
-	} 
 };
+
+
+
+
+
 

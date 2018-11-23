@@ -197,6 +197,21 @@ bool isNakedStructType(QualType qt, bool allowImplicit) {
   return false;
 }
 
+bool isLambdaType(QualType qt) {
+  
+  assert(qt.isCanonical());
+ 
+  if (auto decl = qt->getAsCXXRecordDecl()) {
+
+    if (!decl || !decl->hasDefinition())
+      return false;
+
+    return decl->isLambda();
+  }
+  
+  return false;
+}
+
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
   
   assert(qt.isCanonical());

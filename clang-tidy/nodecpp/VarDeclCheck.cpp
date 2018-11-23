@@ -161,6 +161,17 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
+  if(isLambdaType(qt)) {
+
+    //naked struct internal is checked at other place
+    if(var->hasAttr<NodeCppMayExtendAttr>()) {
+      diag(var->getLocation(), "may_extend not implemented for lambda");
+    }
+
+    // this is all for iplicit naked struct
+    return;
+  }
+
   auto dh = DiagHelper(this);
   dh.diag(var->getLocation(), "unsafe type at variable declaration");
   isSafeType(qt, dh);

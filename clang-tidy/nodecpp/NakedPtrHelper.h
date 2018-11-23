@@ -57,6 +57,8 @@ bool isImplicitNakedStructType(QualType qt) {
   return isNakedStructType(qt, true);
 }
 
+bool isLambdaType(QualType qt);
+
 QualType getPointeeType(QualType qt);
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);
 bool isNakedPointerType(QualType qt);

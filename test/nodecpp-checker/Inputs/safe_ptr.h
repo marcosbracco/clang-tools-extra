@@ -95,5 +95,14 @@ owning_ptr<T> make_owning(ARGS ... args) {
 
 }
 
+namespace std {
+	template< class R, class... Args >
+	class function {
+		public:
+		template<class T>
+		function(T t) {}
+	};
+}
+
 
 #endif //SAFE_PTR_H

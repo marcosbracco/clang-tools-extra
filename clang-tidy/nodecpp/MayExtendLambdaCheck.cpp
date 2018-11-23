@@ -44,7 +44,8 @@ bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, const ValueDecl* 
       break;
     case LCK_ByCopy: {
       auto d = it->getCapturedVar();
-      if (isSafeType(d->getType()))
+      auto qt = d->getType().getCanonicalType();
+      if (isSafeType(qt))
         break;
 
       if (d->hasGlobalStorage())
