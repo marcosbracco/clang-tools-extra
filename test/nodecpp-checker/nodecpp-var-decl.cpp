@@ -86,7 +86,7 @@ class Safe {
 		Sock* other [[nodecpp::may_extend_to_this]] = sock;
 // CHECK-MESSAGES: :[[@LINE-1]]:9: warning: (S1.3)
 		Sock* other2 [[nodecpp::may_extend_to_this]] = dontExtend; //bad donExtend is not valid initializer
-// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: initializer not allowed to may_extend declaration [nodecpp-var-decl]
+// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: (S1.3)
 	}
 
 };

@@ -40,21 +40,21 @@ void StdFunctionCheck::checkLambda(QualType qt, bool ownedArg0, SourceLocation c
   for (unsigned i = 0; i != m->param_size(); ++i) {
     auto p = m->getParamDecl(i);
     if (p->hasAttr<NodeCppMayExtendAttr>()) {
-      diag(callLoc, "lambda with attribute [[may_extend ]] can't be used to initialize object");
+      diag(callLoc, "lambda with attribute [[may_extend_to_this]] can't be used to initialize object");
       diag(p->getLocation(), "declared here", DiagnosticIDs::Note);
       return;
     }
     
     if(ownedArg0 && i == 0) {
       if(!p->hasAttr<NodeCppOwnedByThisAttr>()) {
-        diag(callLoc, "lambda without attribute [[owned_by]] can't be used to initialize object");
+        diag(callLoc, "lambda without attribute [[owned_by_this]] can't be used to initialize object");
         diag(p->getLocation(), "referenced from here", DiagnosticIDs::Note);
         return;
       }
     }
     else {
         if(p->hasAttr<NodeCppOwnedByThisAttr>()) {
-        diag(callLoc, "lambda with attribute [[owned_by]] can't be used to initialize object");
+        diag(callLoc, "lambda with attribute [[owned_by_this]] can't be used to initialize object");
         diag(p->getLocation(), "declared here", DiagnosticIDs::Note);
         return;
       }

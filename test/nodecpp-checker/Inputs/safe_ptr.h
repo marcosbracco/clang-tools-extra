@@ -36,8 +36,8 @@ class soft_ptr {
 public:
 	soft_ptr(T* ptr = nullptr) :ptr(ptr) {}
 
-	soft_ptr(const soft_ptr&) = delete;
-	soft_ptr& operator=(const soft_ptr&) = delete;
+	soft_ptr(const soft_ptr&) = default;
+	soft_ptr& operator=(const soft_ptr&) = default;
 
 	soft_ptr(soft_ptr&&) = default;
 	soft_ptr& operator=(soft_ptr&&) = default;
@@ -93,33 +93,6 @@ owning_ptr<T> make_owning(ARGS ... args) {
 	return owning_ptr<T>(new T(args...));
 }
 
-
-template< class R, class... Args >
-class function_owned_arg0 {
-public:
-	function_owned_arg0() {}
-
-	template<class L>
-	function_owned_arg0(L l) {}
-
-	template<class L>
-	function_owned_arg0& operator=(L l) {}	
-};
-
 }
-
-namespace std {
-template <class R, class... Args>
-class function {
-public:
-  function() {}
-
-  template <class T>
-  function(T t) {}
-
-  template <class L>
-  function &operator=(L l) {}
-};
-} // namespace std
 
 #endif //SAFE_PTR_H

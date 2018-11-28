@@ -20,15 +20,16 @@ namespace nodecpp {
 DiagHelper NullDiagHelper;
 
 bool isOwnerPtrName(const std::string &Name) {
-  return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr";
+  return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr" || Name == "owning_ptr";
 }
 
 bool isOwningPtrRecord(const CXXRecordDecl *decl) {
-  return  decl->getQualifiedNameAsString() == "nodecpp::owning_ptr";
+  return  isOwnerPtrName(decl->getQualifiedNameAsString());
 }
 
 bool isSafePtrName(const std::string &Name) {
-  return isOwnerPtrName(Name) || Name == "nodecpp::soft_ptr" || Name == "nodecpp::safe_ptr";
+  return isOwnerPtrName(Name) || Name == "nodecpp::soft_ptr" ||
+   Name == "nodecpp::safe_ptr" || Name == "soft_ptr";
 }
 
 bool isSafeName(const std::string &Name) {
@@ -44,7 +45,7 @@ bool isNakedStructName(const std::string &Name) {
 }
 
 bool isNakedPtrName(const std::string& name) {
-  return name == "nodecpp::naked_ptr";
+  return name == "nodecpp::naked_ptr" || name == "naked_ptr";
 }
 
 bool isUnsafeName(const std::string &Name) {
@@ -65,7 +66,7 @@ bool isStdFunctionType(QualType qt) {
 
 bool isParamOnlyType(QualType qt) {
 
-  return isStdFunctionType(qt);
+  return isStdFunctionType(qt) || isNodecppFunctionOwnedArg0Type(qt);
 }
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {

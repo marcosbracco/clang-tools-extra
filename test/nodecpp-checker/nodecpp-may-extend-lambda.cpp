@@ -1,6 +1,7 @@
 // RUN: clang-tidy %s -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 #include <safe_ptr.h>
+#include <function_owned.h>
 
 using namespace nodecpp;
 
@@ -28,11 +29,11 @@ struct MyServer {
 		srv.onPlain(this);
 
 
-		srv.on([this](naked_ptr<Socket> sk [[nodecpp::owned_by_this]]){
-			sk->on([this, sk]() {
-				/* do something */
-			});
-		});
+		// srv.on([this](naked_ptr<Socket> sk [[nodecpp::owned_by_this]]){
+		// 	sk->on([this, sk]() {
+		// 		/* do something */
+		// 	});
+		// });
 	}
 
 	void onConnect(naked_ptr<Socket> sk [[nodecpp::owned_by_this]] ) {
