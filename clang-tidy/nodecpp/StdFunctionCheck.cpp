@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "StdFunctionCheck.h"
+#include "NakedPtrHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -21,15 +22,102 @@ void StdFunctionCheck::registerMatchers(MatchFinder *Finder) {
   // FIXME: Add matchers.
   Finder->addMatcher(
       cxxOperatorCallExpr(hasOverloadedOperatorName("=")
-      ).bind("expr"), this);
+      ).bind("op"), this);
+
+  Finder->addMatcher(
+      cxxConstructExpr().bind("ctor"), this);
+}
+
+void StdFunctionCheck::checkLambda(QualType qt, bool ownedArg0, SourceLocation callLoc) {
+
+  assert(qt.isCanonical());
+  auto decl = qt->getAsCXXRecordDecl();
+  assert(decl);
+  assert(decl->hasDefinition());
+  assert(decl->isLambda());
+  auto m = decl->getLambdaCallOperator();
+
+  for (unsigned i = 0; i != m->param_size(); ++i) {
+    auto p = m->getParamDecl(i);
+    if (p->hasAttr<NodeCppMayExtendAttr>()) {
+      diag(callLoc, "lambda with attribute [[may_extend ]] can't be used to initialize object");
+      diag(p->getLocation(), "declared here", DiagnosticIDs::Note);
+      return;
+    }
+    
+    if(ownedArg0 && i == 0) {
+      if(!p->hasAttr<NodeCppOwnedByThisAttr>()) {
+        diag(callLoc, "lambda without attribute [[owned_by]] can't be used to initialize object");
+        diag(p->getLocation(), "referenced from here", DiagnosticIDs::Note);
+        return;
+      }
+    }
+    else {
+        if(p->hasAttr<NodeCppOwnedByThisAttr>()) {
+        diag(callLoc, "lambda with attribute [[owned_by]] can't be used to initialize object");
+        diag(p->getLocation(), "declared here", DiagnosticIDs::Note);
+        return;
+      }
+    }
+  }
+}
+
+void StdFunctionCheck::checkFunctions(QualType arg0, QualType arg1, SourceLocation callLoc) {
+  
+  assert(arg0.isCanonical());
+  assert(arg1.isCanonical());
+  
+  if(isStdFunctionType(arg0)) {
+    if(isStdFunctionType(arg1)) {
+      // this is ok
+      return;
+    }
+    else if(isLambdaType(arg1)) {
+      // check it doesn't have attributes
+      checkLambda(arg1, false, callLoc);
+      //is ok!
+    }
+    else {
+      // this is forbidden
+      diag(callLoc, "std::function can be assigned from lambda or from other std::function");
+      return;
+    }
+  }
+  else if(isNodecppFunctionOwnedArg0Type(arg0)) {
+    if(isNodecppFunctionOwnedArg0Type(arg1)) {
+      // this is ok
+      return;
+    }
+    else if(isLambdaType(arg1)) {
+      // check it does have attributes
+      checkLambda(arg1, true, callLoc);
+    }
+    else {
+      // this is forbidden
+      diag(callLoc, "nodecpp::function_with_owned can be assigned from lambda or from other nodecpp::function_with_owned");
+      return;
+    }
+  }
 }
 
 void StdFunctionCheck::check(const MatchFinder::MatchResult &Result) {
-  // FIXME: Add callback implementation.
-  // auto expr = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("expr");
-  
-  // diag(expr->getExprLoc(), "found here");
 
+  if(auto opCall = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("op")) {
+    if(opCall->getNumArgs() >= 2) {
+      QualType arg0 = opCall->getArg(0)->getType().getCanonicalType();
+      QualType arg1 = opCall->getArg(1)->getType().getCanonicalType();
+
+      checkFunctions(arg0, arg1, opCall->getExprLoc());
+    }
+  }
+  else if(auto ctor = Result.Nodes.getNodeAs<CXXConstructExpr>("ctor")) {
+    if(ctor->getNumArgs() >= 1) {
+      QualType arg0 = ctor->getType().getCanonicalType();
+      QualType arg1 = ctor->getArg(0)->getType().getCanonicalType();
+
+      checkFunctions(arg0, arg1, ctor->getExprLoc());
+    }
+  }
 }
 
 } // namespace nodecpp

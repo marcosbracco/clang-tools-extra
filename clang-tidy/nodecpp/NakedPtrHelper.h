@@ -47,7 +47,7 @@ bool isNakedStructName(const std::string &Name);
 bool isNakedPtrName(const std::string& name);
 bool isUnsafeName(const std::string &Name);
 
-
+bool isStdFunctionType(QualType qt);
 bool isParamOnlyType(QualType qt);
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
@@ -58,6 +58,7 @@ bool isImplicitNakedStructType(QualType qt) {
 }
 
 bool isLambdaType(QualType qt);
+bool isNodecppFunctionOwnedArg0Type(QualType qt);
 
 QualType getPointeeType(QualType qt);
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);

@@ -25,6 +25,9 @@ public:
   StdFunctionCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
+
+  void checkLambda(QualType qt, bool owned, SourceLocation callLoc);
+  void checkFunctions(QualType arg0, QualType arg1, SourceLocation callLoc); 
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
 };
 

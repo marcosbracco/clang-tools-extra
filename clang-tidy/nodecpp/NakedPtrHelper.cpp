@@ -52,29 +52,20 @@ bool isUnsafeName(const std::string &Name) {
   return isNakedStructName(Name) || isNakedPtrName(Name);
 }
 
+bool isStdFunctionType(QualType qt) {
+  
+  assert(qt.isCanonical());
+
+  auto decl = qt->getAsCXXRecordDecl();
+  if (!decl || !decl->hasDefinition())
+    return false;
+
+  return decl->getQualifiedNameAsString() == "std::function";
+}
+
 bool isParamOnlyType(QualType qt) {
 
-  assert(!isSafeType(qt));
-
-  auto t = qt.getCanonicalType().getTypePtrOrNull();
-  if (!t) {
-  	// this is a build problem with the type
-    // not really our problem yet
-    return false; 
-  } 
-  else if (t->isReferenceType() || t->isPointerType()) {
-      return false;
-  } else if (t->isRecordType()) {
-    auto decl = t->getAsCXXRecordDecl();
-    if (!decl || !decl->hasDefinition())
-      return false;
-
-    auto name = decl->getQualifiedNameAsString();
-    if (name == "std::function")
-      return true;
-  }
-  
-  return false;
+  return isStdFunctionType(qt);
 }
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
@@ -210,6 +201,17 @@ bool isLambdaType(QualType qt) {
   }
   
   return false;
+}
+
+bool isNodecppFunctionOwnedArg0Type(QualType qt) {
+  assert(qt.isCanonical());
+ 
+  auto decl = qt->getAsCXXRecordDecl();
+
+  if (!decl || !decl->hasDefinition())
+    return false;
+
+  return decl->getQualifiedNameAsString() == "nodecpp::function_owned_arg0";
 }
 
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {

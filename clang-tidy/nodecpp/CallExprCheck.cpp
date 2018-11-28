@@ -30,6 +30,7 @@ void CallExprCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
+  return;
   auto decl = expr->getDirectCallee();
   SourceManager* manager = Result.SourceManager;
   auto eLoc = manager->getExpansionLoc(decl->getLocStart());
@@ -45,7 +46,7 @@ void CallExprCheck::check(const MatchFinder::MatchResult &Result) {
   if(name.substr(0, 9) == "nodecpp::")
     return;
 
-  diag(expr->getExprLoc(), "(S8) unsafe function call is prohibited");
+  //diag(expr->getExprLoc(), "(S8) unsafe function call is prohibited");
 }
 
 } // namespace nodecpp

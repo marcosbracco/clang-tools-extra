@@ -93,16 +93,33 @@ owning_ptr<T> make_owning(ARGS ... args) {
 	return owning_ptr<T>(new T(args...));
 }
 
+
+template< class R, class... Args >
+class function_owned_arg0 {
+public:
+	function_owned_arg0() {}
+
+	template<class L>
+	function_owned_arg0(L l) {}
+
+	template<class L>
+	function_owned_arg0& operator=(L l) {}	
+};
+
 }
 
 namespace std {
-	template< class R, class... Args >
-	class function {
-		public:
-		template<class T>
-		function(T t) {}
-	};
-}
+template <class R, class... Args>
+class function {
+public:
+  function() {}
 
+  template <class T>
+  function(T t) {}
+
+  template <class L>
+  function &operator=(L l) {}
+};
+} // namespace std
 
 #endif //SAFE_PTR_H
