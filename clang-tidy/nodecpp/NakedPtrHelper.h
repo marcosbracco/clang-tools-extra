@@ -81,6 +81,7 @@ const Expr* getBaseIfOsnPtrDerref(const Expr* expr);
 const Expr *getParentExpr(ASTContext *context, const Expr *expr);
 const Expr *ignoreTemporaries(const Expr *expr);
 const LambdaExpr *getLambda(const Expr *expr);
+
 bool isFunctionPtr(const Expr *expr);
 
 const Stmt *getParentStmt(ASTContext *context, const Stmt *stmt);

@@ -483,7 +483,6 @@ const Expr *ignoreTemporaries(const Expr *expr) {
   }
 } // namespace nodecpp
 
-
 bool isFunctionPtr(const Expr *expr) {
 
   if (!expr)

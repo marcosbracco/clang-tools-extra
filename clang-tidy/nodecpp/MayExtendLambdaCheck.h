@@ -25,10 +25,10 @@ public:
   MayExtendLambdaCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
-  bool checkLambda(const LambdaExpr *lamb, const ValueDecl* decl);
+  bool checkLambda(const LambdaExpr *lamb, std::pair<bool, const ValueDecl*> decl);
 //  void checkLambda2(const LambdaExpr *lamb);
  // static const LambdaExpr *getLambda(const Expr *expr);
-  bool tryCheckAsLambda(const Expr *expr, const ValueDecl* decl);
+  bool tryCheckAsLambda(const Expr *expr, std::pair<bool, const ValueDecl*> decl);
 
   static bool canMayExtendBeCalled(const Expr* expr);
   static std::pair<bool, const ValueDecl*> canMayExtendBeCalled2(const Expr* expr);

@@ -33,12 +33,17 @@ void MayExtendLambdaCheck::registerMatchers(MatchFinder *Finder) {
                      this);
 }
 
-bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, const ValueDecl* decl) {
+bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, std::pair<bool, const ValueDecl*> decl) {
   
   auto caps = lamb->captures();
   for (auto it = caps.begin(); it != caps.end(); ++it) {
     switch (it->getCaptureKind()) {
     case LCK_This:
+      if(decl.first)
+        break;
+      
+      diag(it->getLocation(), "capture of 'this' unsafe to extend scope");
+      return false;
     case LCK_StarThis:
       // this is ok
       break;
@@ -54,7 +59,7 @@ bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, const ValueDecl* 
       if(d->hasAttr<NodeCppMayExtendAttr>())
         break;
 
-      if(d == decl)
+      if(d == decl.second) //ok
         break;
 
       diag(it->getLocation(), "unsafe capture to extend scope");
@@ -119,7 +124,7 @@ bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, const ValueDecl* 
 // }
 
 //returns true if the expression was checked (either positively or negatively)
-bool MayExtendLambdaCheck::tryCheckAsLambda(const Expr *expr, const ValueDecl* decl) {
+bool MayExtendLambdaCheck::tryCheckAsLambda(const Expr *expr, std::pair<bool, const ValueDecl*> decl) {
 //const LambdaExpr *MayExtendLambdaCheck::getLambda(const Expr *expr) {
 
   if (!expr)
@@ -218,7 +223,11 @@ bool MayExtendLambdaCheck::canMayExtendBeCalled(const Expr* expr) {
 
 /* static */
 std::pair<bool, const ValueDecl*> MayExtendLambdaCheck::canMayExtendBeCalled2(const Expr* expr) {
-  // here we allow:
+  // here we check the base where a method with [[may_extend_to_this]] was called
+  // if the base has the lifetime of 'this', then 'this' or any other member
+  // with the lifetime of 'this' may be an argument
+
+  // if the base has other lifetime then only the base itself can be the argument
 
   // this->call()
 
@@ -256,7 +265,7 @@ std::pair<bool, const ValueDecl*> MayExtendLambdaCheck::canMayExtendBeCalled2(co
     else if(decl->hasAttr<NodeCppOwnedByThisAttr>())
       return {true, decl};
     else
-      return {false, nullptr};
+      return {false, decl};
   } else if(auto osnBase = getBaseIfOsnPtrDerref(base)) {
     if(auto var = dyn_cast<DeclRefExpr>(osnBase->IgnoreParenImpCasts())) {
       auto decl = var->getDecl();
@@ -269,7 +278,7 @@ std::pair<bool, const ValueDecl*> MayExtendLambdaCheck::canMayExtendBeCalled2(co
       else if(decl->hasAttr<NodeCppOwnedByThisAttr>())
         return {true, decl};
       else
-        return {false, nullptr};
+        return {false, decl};
     }
   }
 
@@ -294,10 +303,10 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto callee = call->getCallee();
   auto mayExtend = canMayExtendBeCalled2(callee);
-  if(!mayExtend.first) {
-    diag(callee->getExprLoc(), "methods with attribute can be called only on members that share the lifetime of this, or have attribute themselves");
-    return;
-  }
+  // if(!mayExtend.first) {
+  //   diag(callee->getExprLoc(), "methods with attribute can be called only on members that share the lifetime of this, or have attribute themselves");
+  //   return;
+  // }
 
   for (unsigned i = 0; i != decl->param_size(); ++i) {
     auto p = decl->getParamDecl(i);
@@ -306,13 +315,15 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
       auto e = call->getArg(i);
       if(isFunctionPtr(e)) {
         continue;
-      } else if(tryCheckAsLambda(e, mayExtend.second)) {
+      } else if(tryCheckAsLambda(e, mayExtend)) {
         continue;
       } else {
-        auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this);
-        if(ch.checkExpr(e))
-          continue;
-        else if(auto dr = dyn_cast<DeclRefExpr>(ignoreTemporaries(e))) {
+        if(mayExtend.first) {
+          auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this);
+          if(ch.checkExpr(e))
+            continue;
+        }
+        if(auto dr = dyn_cast<DeclRefExpr>(ignoreTemporaries(e))) {
           if(dr->getDecl() == mayExtend.second)
             continue;
         }

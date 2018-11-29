@@ -55,22 +55,25 @@ struct MyServer {
 
 		sock->on([this, dontExtend]() { }); //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:19: warning: unsafe capture to extend
-		dontExtend->on([]() { }); //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:15: warning: methods with attribute
+
+		dontExtend->on([dontExtend]() { }); //good, as long as we don't have other captures
+
+		dontExtend->on([this]() { }); //bad
+// CHECK-MESSAGES: :[[@LINE-1]]:19: warning: capture of 'this' unsafe to extend scope
 	}
 
 
 	void bad2() {
 		int i;
 		auto l = [this, &i](naked_ptr<Socket> sock) {};
-// CHECK-MESSAGES: :[[@LINE-1]]:20: warning: unsafe capture to extend scope [nodecpp-may-extend-lambda]
+// CHECK-MESSAGES: :[[@LINE-1]]:20: warning: unsafe capture to extend scope
 		srv.on(l);
 // CHECK-MESSAGES: :[[@LINE-1]]:10: note: referenced from here
 	} 
 
 	void bad3(naked_ptr<Socket> sock) {
 		sock->on([this]() { });// bad, sock is not a member
-// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: methods with
+// CHECK-MESSAGES: :[[@LINE-1]]:13: warning: capture of 'this' unsafe to extend scope
 	}
 
 };
