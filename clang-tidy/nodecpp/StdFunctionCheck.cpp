@@ -22,7 +22,7 @@ void StdFunctionCheck::registerMatchers(MatchFinder *Finder) {
   // FIXME: Add matchers.
   Finder->addMatcher(
       cxxOperatorCallExpr(hasOverloadedOperatorName("=")
-      ).bind("opAsgn"), this);
+      ).bind("op"), this);
 
   Finder->addMatcher(
       cxxConstructExpr().bind("ctor"), this);
