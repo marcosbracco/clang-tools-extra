@@ -20,15 +20,14 @@ namespace nodecpp {
 
 void ContructorExprCheck::registerMatchers(MatchFinder *Finder) {
 
-  Finder->addMatcher(
-      cxxConstructExpr().bind("ctor"), this);
+  Finder->addMatcher(cxxTemporaryObjectExpr().bind("tmp"), this);
 }
 
 void ContructorExprCheck::check(const MatchFinder::MatchResult &Result) {
  
-  if(auto ctor = Result.Nodes.getNodeAs<CXXConstructExpr>("ctor")) {
+  if(auto tmp = Result.Nodes.getNodeAs<CXXTemporaryObjectExpr>("tmp")) {
 
-    QualType qt = ctor->getType().getCanonicalType();
+    QualType qt = tmp->getType().getCanonicalType();
     if (isSafeType(qt))
       return;
     if(isParamOnlyType(qt))
@@ -48,9 +47,9 @@ void ContructorExprCheck::check(const MatchFinder::MatchResult &Result) {
     if(isLambdaType(qt))
       return;
 
-    ctor->dump();
+    tmp->dump();
     auto dh = DiagHelper(this);
-    dh.diag(ctor->getExprLoc(), "unsafe type contructor");
+    dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
     isSafeType(qt, dh);
   }
 }

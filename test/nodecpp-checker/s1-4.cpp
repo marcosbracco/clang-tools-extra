@@ -35,6 +35,9 @@ void func3() {
 
 	UsesUnion uu;
 // CHECK-MESSAGES: :[[@LINE-1]]:12: warning: unsafe type at variable declaration [nodecpp-var-decl]
+
+	UsesUnion();
+// CHECK-MESSAGES: :[[@LINE-1]]:2: warning: unsafe type at temporary expression
 }
 
 
