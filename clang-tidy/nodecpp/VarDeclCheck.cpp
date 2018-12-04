@@ -93,7 +93,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     //non-const reference only from safe types
     QualType inner = qt->getPointeeType().getCanonicalType();
     if(!isSafeType(inner)) {
-      diag(var->getLocation(), "(S5.3) non-const reference is prohibited");
+      diag(var->getLocation(), "(S5.3) non-const reference of unsafe type is prohibited");
     }
 
     //this is all for non-const references

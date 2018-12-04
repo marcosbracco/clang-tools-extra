@@ -179,6 +179,7 @@ Clang-Tidy Checks
    nodecpp-asm
    nodecpp-call-expr
    nodecpp-const
+   nodecpp-contructor-expr
    nodecpp-may-extend-decl
    nodecpp-may-extend-lambda
    nodecpp-naked-assignment

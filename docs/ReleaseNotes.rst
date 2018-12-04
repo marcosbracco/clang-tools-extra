@@ -31,6 +31,11 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- New `nodecpp-contructor-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-contructor-expr.html>`_ check
+
+  FIXME: add release notes.
+
 - New `nodecpp-call-expr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-call-expr.html>`_ check
 

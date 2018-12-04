@@ -22,10 +22,18 @@ void StdFunctionCheck::registerMatchers(MatchFinder *Finder) {
   // FIXME: Add matchers.
   Finder->addMatcher(
       cxxOperatorCallExpr(hasOverloadedOperatorName("=")
-      ).bind("op"), this);
+      ).bind("opAsgn"), this);
 
   Finder->addMatcher(
       cxxConstructExpr().bind("ctor"), this);
+
+  Finder->addMatcher(
+      cxxOperatorCallExpr(hasOverloadedOperatorName("()")
+      ).bind("call"), this);
+
+  Finder->addMatcher(
+      cxxMemberCallExpr(callee(cxxMethodDecl(hasName("assign")))).bind("assg"),
+      this);
 }
 
 void StdFunctionCheck::checkLambda(QualType qt, bool ownedArg0, SourceLocation callLoc) {
@@ -102,12 +110,12 @@ void StdFunctionCheck::checkFunctions(QualType arg0, QualType arg1, SourceLocati
 
 void StdFunctionCheck::check(const MatchFinder::MatchResult &Result) {
 
-  if(auto opCall = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("op")) {
-    if(opCall->getNumArgs() >= 2) {
-      QualType arg0 = opCall->getArg(0)->getType().getCanonicalType();
-      QualType arg1 = opCall->getArg(1)->getType().getCanonicalType();
+  if(auto opAsgn = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("op")) {
+    if(opAsgn->getNumArgs() >= 2) {
+      QualType arg0 = opAsgn->getArg(0)->getType().getCanonicalType();
+      QualType arg1 = opAsgn->getArg(1)->getType().getCanonicalType();
 
-      checkFunctions(arg0, arg1, opCall->getExprLoc());
+      checkFunctions(arg0, arg1, opAsgn->getExprLoc());
     }
   }
   else if(auto ctor = Result.Nodes.getNodeAs<CXXConstructExpr>("ctor")) {
@@ -116,6 +124,22 @@ void StdFunctionCheck::check(const MatchFinder::MatchResult &Result) {
       QualType arg1 = ctor->getArg(0)->getType().getCanonicalType();
 
       checkFunctions(arg0, arg1, ctor->getExprLoc());
+    }
+  }
+  else if(auto opCall = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("call")) {
+    if(opCall->getNumArgs() >= 1) {
+      QualType arg0 = opCall->getArg(0)->getType().getCanonicalType();
+      if(isNodecppFunctionOwnedArg0Type(arg0)) {
+        diag(opCall->getExprLoc(), "function with attribute [[owned_by_this]] can't called from safe code");
+      }
+    }
+  }
+  else if(auto mAssign = Result.Nodes.getNodeAs<CXXMemberCallExpr>("assg")) {
+    if(mAssign->getNumArgs() >= 1) {
+      QualType arg0 = mAssign->getImplicitObjectArgument()->getType().getCanonicalType();
+      QualType arg1 = mAssign->getArg(0)->getType().getCanonicalType();
+
+      checkFunctions(arg0, arg1, mAssign->getExprLoc());
     }
   }
 }
