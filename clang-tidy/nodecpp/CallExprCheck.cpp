@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CallExprCheck.h"
+#include "NakedPtrHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -25,28 +26,28 @@ void CallExprCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto expr = Result.Nodes.getNodeAs<CallExpr>("call");
 
-  if(isa<CXXMemberCallExpr>(expr)) {
-    //don't check here
-    return;
-  }
-
-  return;
   auto decl = expr->getDirectCallee();
+  if(!decl)
+    return;
+
+  if(isa<CXXMethodDecl>(decl))
+    return;
+
   SourceManager* manager = Result.SourceManager;
   auto eLoc = manager->getExpansionLoc(decl->getLocStart());
 
-  if(!eLoc.isInvalid()) {
-    if(!manager->isInSystemHeader(eLoc)) {
-      // this is in safe code, then is ok
-      return;
-    }
-  }
-
-  std::string name = decl->getQualifiedNameAsString();
-  if(name.substr(0, 9) == "nodecpp::")
+  if(eLoc.isInvalid())
     return;
 
-  //diag(expr->getExprLoc(), "(S8) unsafe function call is prohibited");
+  if(!manager->isInSystemHeader(eLoc))
+    return; // this is in safe code, then is ok
+ 
+ 
+  std::string name = decl->getQualifiedNameAsString();
+  if(isSafeFunctionName(name))
+    return;
+
+  diag(expr->getExprLoc(), "(S8) unsafe function call is prohibited");
 }
 
 } // namespace nodecpp

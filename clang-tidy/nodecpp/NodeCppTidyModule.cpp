@@ -14,7 +14,6 @@
 #include "AsmCheck.h"
 #include "CallExprCheck.h"
 #include "ConstCheck.h"
-#include "ContructorExprCheck.h"
 #include "MayExtendDeclCheck.h"
 #include "MayExtendLambdaCheck.h"
 #include "NakedAssignmentCheck.h"
@@ -26,9 +25,10 @@
 #include "RawPointerAssignmentCheck.h"
 #include "RawPointerDereferenceCheck.h"
 #include "RawPtrCastCheck.h"
+#include "RecordDeclCheck.h"
 #include "StaticStorageCheck.h"
 #include "StdFunctionCheck.h"
-#include "UnionCheck.h"
+#include "TemporaryExprCheck.h"
 #include "VarDeclCheck.h"
 
 namespace clang {
@@ -47,8 +47,6 @@ public:
         "nodecpp-call-expr");
     CheckFactories.registerCheck<ConstCheck>(
         "nodecpp-const");
-    CheckFactories.registerCheck<ContructorExprCheck>(
-        "nodecpp-contructor-expr");
     CheckFactories.registerCheck<MayExtendDeclCheck>(
         "nodecpp-may-extend-decl");
     CheckFactories.registerCheck<MayExtendLambdaCheck>(
@@ -71,12 +69,14 @@ public:
         "nodecpp-raw-pointer-dereference");
     CheckFactories.registerCheck<RawPtrCastCheck>(
         "nodecpp-raw-ptr-cast");
+    CheckFactories.registerCheck<RecordDeclCheck>(
+        "nodecpp-record-decl");
     CheckFactories.registerCheck<StaticStorageCheck>(
         "nodecpp-static-storage");
     CheckFactories.registerCheck<StdFunctionCheck>(
         "nodecpp-std-function");
-    CheckFactories.registerCheck<UnionCheck>(
-        "nodecpp-union");
+    CheckFactories.registerCheck<TemporaryExprCheck>(
+        "nodecpp-temporary-expr");
     CheckFactories.registerCheck<VarDeclCheck>(
         "nodecpp-var-decl");
   }

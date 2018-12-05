@@ -1,4 +1,4 @@
-//===--- ContructorExprCheck.h - clang-tidy----------------------*- C++ -*-===//
+//===--- RecordDeclCheck.h - clang-tidy-------------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_RECORDDECLCHECKCHECK_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_RECORDDECLCHECKCHECK_H
 
 #include "../ClangTidy.h"
 
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-contructor-expr.html
-class ContructorExprCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-record-decl.html
+class RecordDeclCheck : public ClangTidyCheck {
 public:
-  ContructorExprCheck(StringRef Name, ClangTidyContext *Context)
+  RecordDeclCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
@@ -32,4 +32,4 @@ public:
 } // namespace tidy
 } // namespace clang
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_RECORDDECLCHECKCHECK_H

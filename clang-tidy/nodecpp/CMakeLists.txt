@@ -4,7 +4,6 @@ add_clang_library(clangTidyNodeCppModule
   AsmCheck.cpp
   CallExprCheck.cpp
   ConstCheck.cpp
-  ContructorExprCheck.cpp
   MayExtendDeclCheck.cpp
   MayExtendLambdaCheck.cpp
   NakedAssignmentCheck.cpp
@@ -19,9 +18,10 @@ add_clang_library(clangTidyNodeCppModule
   RawPointerAssignmentCheck.cpp
   RawPointerDereferenceCheck.cpp
   RawPtrCastCheck.cpp
+  RecordDeclCheck.cpp
   StaticStorageCheck.cpp
   StdFunctionCheck.cpp
-  UnionCheck.cpp
+  TemporaryExprCheck.cpp
   VarDeclCheck.cpp
 
   LINK_LIBS

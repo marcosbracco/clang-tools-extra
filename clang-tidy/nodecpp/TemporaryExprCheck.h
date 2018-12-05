@@ -1,4 +1,4 @@
-//===--- UnionCheck.h - clang-tidy-------------------------------*- C++ -*-===//
+//===--- TemporaryExprCheck.h - clang-tidy----------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_UNIONCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_UNIONCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H
 
 #include "../ClangTidy.h"
 
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-union.html
-class UnionCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-temporary-expr.html
+class TemporaryExprCheck : public ClangTidyCheck {
 public:
-  UnionCheck(StringRef Name, ClangTidyContext *Context)
+  TemporaryExprCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
@@ -32,4 +32,4 @@ public:
 } // namespace tidy
 } // namespace clang
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_UNIONCHECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_NODECPP_CONTRUCTOREXPRCHECK_H

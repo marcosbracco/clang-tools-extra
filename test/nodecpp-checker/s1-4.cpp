@@ -2,14 +2,14 @@
 
 
 union Bad {
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type declaration
 	int i;
 	int* ptr;
-// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: (S1.4)
 };
 
 void func1() { 
 	Bad bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:6: note:
+// CHECK-MESSAGES: :[[@LINE-1]]:6: warning: unsafe union at variable declaration
 }
 
 
@@ -17,17 +17,17 @@ template <class T>
 union MayBeBad {
 	int i;
 	T ptr;
-// CHECK-MESSAGES: :[[@LINE-1]]:4: warning: (S1.4)
 };
 
 void func2() { 
 
 	MayBeBad<long> good; //ok
 	MayBeBad<long*> bad;
-// CHECK-MESSAGES: :[[@LINE-1]]:18: note:
+// CHECK-MESSAGES: :[[@LINE-1]]:18: warning: unsafe union at variable declaration
 }
 
 class UsesUnion {
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type declaration
 	MayBeBad<int*> pt;
 };
 

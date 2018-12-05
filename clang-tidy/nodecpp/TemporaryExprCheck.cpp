@@ -1,4 +1,4 @@
-//===--- ContructorExprCheck.cpp - clang-tidy------------------------------===//
+//===--- TemporaryExprCheck.cpp - clang-tidy-------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ContructorExprCheck.h"
+#include "TemporaryExprCheck.h"
 #include "NakedPtrHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -18,12 +18,12 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void ContructorExprCheck::registerMatchers(MatchFinder *Finder) {
+void TemporaryExprCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(cxxTemporaryObjectExpr().bind("tmp"), this);
 }
 
-void ContructorExprCheck::check(const MatchFinder::MatchResult &Result) {
+void TemporaryExprCheck::check(const MatchFinder::MatchResult &Result) {
  
   if(auto tmp = Result.Nodes.getNodeAs<CXXTemporaryObjectExpr>("tmp")) {
 
@@ -47,7 +47,7 @@ void ContructorExprCheck::check(const MatchFinder::MatchResult &Result) {
     if(isLambdaType(qt))
       return;
 
-    tmp->dump();
+//    tmp->dump();
     auto dh = DiagHelper(this);
     dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
     isSafeType(qt, dh);

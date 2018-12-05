@@ -19,6 +19,16 @@ namespace nodecpp {
 
 DiagHelper NullDiagHelper;
 
+bool isSafeFunctionName(const std::string& name) {
+  
+  if(name.substr(0, 9) == "nodecpp::")
+    return true;
+  else if(name == "fmt::v5::print")
+    return true;
+
+  return false;
+}
+
 bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr" || Name == "owning_ptr";
 }
@@ -230,7 +240,8 @@ bool isRawPointerType(QualType qt) {
   return qt.getCanonicalType()->isPointerType();
 }
 
-const ClassTemplateSpecializationDecl* getSafePtrDecl(QualType qt) {
+static
+const ClassTemplateSpecializationDecl* getTemplatePtrDecl(QualType qt) {
   
   qt = qt.getCanonicalType();
 
@@ -261,7 +272,7 @@ QualType getPointeeType(QualType qt) {
   if(qt->isPointerType())
     return qt->getPointeeType().getCanonicalType();
 
-  auto decl = getSafePtrDecl(qt);
+  auto decl = getTemplatePtrDecl(qt);
 
   assert(decl);
   assert(decl->hasDefinition());
@@ -288,7 +299,7 @@ QualType unwrapConstRefType(QualType qt) {
 
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
 
-  qt = qt.getCanonicalType();
+//  qt = qt.getCanonicalType();
 
   assert(isNakedPointerType(qt));
   QualType pointee = getPointeeType(qt);
@@ -300,7 +311,7 @@ bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
 
 bool isNakedPointerType(QualType qt) {
   
-  auto decl = getSafePtrDecl(qt);
+  auto decl = getTemplatePtrDecl(qt);
   if(!decl)
     return false;
 
@@ -311,7 +322,7 @@ bool isNakedPointerType(QualType qt) {
 
 bool isSafePtrType(QualType qt) {
 
-  auto decl = getSafePtrDecl(qt);
+  auto decl = getTemplatePtrDecl(qt);
   if(!decl)
     return false;
 
@@ -334,7 +345,7 @@ bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
     return false;
 
   if(decl->isUnion()) {
-    return checkUnion(decl, nullptr);
+    return checkUnion(decl, dh);
   }
 
   auto F = decl->fields();
@@ -371,6 +382,8 @@ bool isSafeType(QualType qt, DiagHelper& dh) {
     return false;
   } else if (qt->isBuiltinType()) {
     return true;
+  } else if(isSafePtrType(qt)) {
+    return isSafeType(getPointeeType(qt), dh);
   } else if (auto rd = qt->getAsCXXRecordDecl()) {
     return isSafeRecord(rd, dh);
   } else if (qt->isTemplateTypeParmType()) {
@@ -390,7 +403,7 @@ const CXXRecordDecl* isUnionType(QualType qt) {
   return (rd && rd->hasDefinition() && rd->isUnion()) ? rd : nullptr;
 }
 
-bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check) {
+bool checkUnion(const CXXRecordDecl *decl, DiagHelper& dh) {
 
   assert(decl);
   assert(decl->hasDefinition());
@@ -403,13 +416,12 @@ bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check) {
       auto qt = (*it)->getType().getCanonicalType();
       if(isRawPointerType(qt)) {
 
-        if(check)
-          check->diag((*it)->getLocation(), "(S1.4) raw pointers inside unions are prohibited");
+        dh.diag((*it)->getLocation(), "(S1.4) raw pointers inside unions are prohibited");
         return false;
       }
       else if(!qt->isBuiltinType() && !qt->isTemplateTypeParmType()) {
-        if(check)
-          check->diag((*it)->getLocation(), "(S1.4) non-primitives inside unions are prohibited");
+
+        dh.diag((*it)->getLocation(), "(S1.4) non-primitives inside unions are prohibited");
         return false;
       }
   }

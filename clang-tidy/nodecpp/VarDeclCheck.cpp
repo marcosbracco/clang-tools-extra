@@ -79,9 +79,11 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     qt = qt->getPointeeType().getCanonicalType();
   
   if(auto u = isUnionType(qt)) {
-    if(!checkUnion(u, this))
-      diag(var->getLocation(), "referenced from here", DiagnosticIDs::Note);
-
+    if(!checkUnion(u)) {
+      auto dh = DiagHelper(this);
+      dh.diag(var->getLocation(), "unsafe union at variable declaration");
+      checkUnion(u, dh);
+    }
     return;
   }
 

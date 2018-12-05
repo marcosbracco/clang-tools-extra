@@ -31,6 +31,12 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-contructor-expr' check was renamed to `nodecpp-temporary-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-temporary-expr.html>`_
+
+- The 'nodecpp-union' check was renamed to `nodecpp-record-decl
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-record-decl.html>`_
+
 - New `nodecpp-contructor-expr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-contructor-expr.html>`_ check
 

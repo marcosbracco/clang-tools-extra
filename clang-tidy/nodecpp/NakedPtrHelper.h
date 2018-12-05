@@ -38,6 +38,8 @@ extern DiagHelper NullDiagHelper;
 
 /// FIXME: Write a short description.
 ///
+bool isSafeFunctionName(const std::string& name);
+
 bool isOwnerPtrName(const std::string &Name);
 bool isOwningPtrRecord(const CXXRecordDecl *decl);
 bool isSafePtrName(const std::string &Name);
@@ -73,7 +75,7 @@ bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh = NullDiagHelper);
 bool isSafeType(QualType qt, DiagHelper& dh = NullDiagHelper);
 
 const CXXRecordDecl* isUnionType(QualType qt);
-bool checkUnion(const CXXRecordDecl *decl, ClangTidyCheck *check);
+bool checkUnion(const CXXRecordDecl *decl, DiagHelper& dh = NullDiagHelper);
 
 bool isOsnPtrRecord(const CXXRecordDecl *decl);
 const Expr* getBaseIfOsnPtrDerref(const Expr* expr);

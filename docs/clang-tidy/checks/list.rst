@@ -179,7 +179,6 @@ Clang-Tidy Checks
    nodecpp-asm
    nodecpp-call-expr
    nodecpp-const
-   nodecpp-contructor-expr
    nodecpp-may-extend-decl
    nodecpp-may-extend-lambda
    nodecpp-naked-assignment
@@ -190,9 +189,10 @@ Clang-Tidy Checks
    nodecpp-raw-pointer-assignment
    nodecpp-raw-pointer-dereference
    nodecpp-raw-ptr-cast
+   nodecpp-record-decl
    nodecpp-static-storage
    nodecpp-std-function
-   nodecpp-union
+   nodecpp-temporary-expr
    nodecpp-var-decl-func
    nodecpp-var-decl
    objc-avoid-nserror-init
