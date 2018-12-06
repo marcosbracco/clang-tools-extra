@@ -27,6 +27,12 @@ void RecordDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto rd = Result.Nodes.getNodeAs<CXXRecordDecl>("rd");
   if(rd && rd->hasDefinition()) {
+
+    //lambda's CXXRecordDecl is not matched here, not sure why
+    // but we add the check anyway
+    if(rd->isLambda())
+      return;
+
     auto t = rd->getDescribedClassTemplate();
     
     if(t) // this is a template, don't check here
@@ -37,7 +43,12 @@ void RecordDeclCheck::check(const MatchFinder::MatchResult &Result) {
       return;
 
     if(rd->hasAttr<NodeCppNakedStructAttr>()) {
-      checkNakedStructRecord(rd, this);
+      if(checkNakedStructRecord(rd))
+        return;
+
+      auto dh = DiagHelper(this);
+      dh.diag(rd->getLocation(), "unsafe naked_struct declaration");
+      checkNakedStructRecord(rd, dh);
     }
     else {
       if(isSafeRecord(rd))

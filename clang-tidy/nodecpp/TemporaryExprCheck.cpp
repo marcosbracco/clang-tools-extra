@@ -35,14 +35,26 @@ void TemporaryExprCheck::check(const MatchFinder::MatchResult &Result) {
 
     if(isRawPointerType(qt))
       return;
-    if(isNakedPointerType(qt))
-      return;
     
-    if(isNakedStructType(qt))
-      return;
+    if(auto np = isNakedPointerType(qt)) {
+      if(np.isOk())
+        return;
 
-    if(isImplicitNakedStructType(qt))
+      auto dh = DiagHelper(this);
+      dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
+      isNakedPointerType(qt, dh); //for report
       return;
+    }
+    
+    if(auto ns = isNakedStructType(qt)) {
+      if(ns.isOk())
+        return;
+
+      auto dh = DiagHelper(this);
+      dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
+      isNakedStructType(qt, dh); //for report
+      return;
+    }
 
     if(isLambdaType(qt))
       return;

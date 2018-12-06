@@ -36,6 +36,15 @@ public:
 
 extern DiagHelper NullDiagHelper;
 
+class KindCheck {
+  bool isKind = false;
+  bool checkOk = false;
+public:
+  KindCheck(bool isKind, bool checkOk) :isKind(isKind), checkOk(checkOk) {}
+  operator bool () const { return isKind; }
+  bool isOk() const { return checkOk; }
+};
+
 /// FIXME: Write a short description.
 ///
 bool isSafeFunctionName(const std::string& name);
@@ -52,19 +61,17 @@ bool isUnsafeName(const std::string &Name);
 bool isStdFunctionType(QualType qt);
 bool isParamOnlyType(QualType qt);
 
-bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check);
-bool isNakedStructType(QualType qt, bool allowImplicit = false);
-inline
-bool isImplicitNakedStructType(QualType qt) {
-  return isNakedStructType(qt, true);
-}
+bool checkNakedStructRecord(const CXXRecordDecl *decl, DiagHelper& dh = NullDiagHelper);
+KindCheck isNakedStructType(QualType qt, DiagHelper& dh = NullDiagHelper);
+
+
 
 bool isLambdaType(QualType qt);
 bool isNodecppFunctionOwnedArg0Type(QualType qt);
 
 QualType getPointeeType(QualType qt);
 bool checkNakedPointerType(QualType qt, ClangTidyCheck *check);
-bool isNakedPointerType(QualType qt);
+KindCheck isNakedPointerType(QualType qt, DiagHelper& dh = NullDiagHelper);
 
 bool checkRawPointerType(QualType qt, ClangTidyCheck *check);
 bool isRawPointerType(QualType qt);

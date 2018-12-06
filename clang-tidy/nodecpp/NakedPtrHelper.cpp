@@ -79,7 +79,7 @@ bool isParamOnlyType(QualType qt) {
   return isStdFunctionType(qt) || isNodecppFunctionOwnedArg0Type(qt);
 }
 
-bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
+bool checkNakedStructRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
 
   //on debug break here
   assert(decl);
@@ -92,8 +92,8 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
   //we check explicit and implicit here
   bool hasAttr = decl->hasAttr<NodeCppNakedStructAttr>();
 
-  bool checkInits = false;
-  std::list<const FieldDecl*> missingInitializers;
+  // bool checkInits = false;
+  // std::list<const FieldDecl*> missingInitializers;
   auto f = decl->fields();
   for (auto it = f.begin(); it != f.end(); ++it) {
 
@@ -101,26 +101,33 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
     if(isSafeType(qt))
       continue;
 
-    if(isNakedPointerType(qt)) {
-      if(checkInits && !(*it)->hasInClassInitializer())
-        missingInitializers.push_back(*it);
-  
-      continue;
+    if(auto np = isNakedPointerType(qt)) {
+      if(np.isOk())
+        continue;
+
+      isNakedPointerType(qt, dh); //for report
+      dh.diag((*it)->getLocation(), "unsafe type at naked_ptr declaration");
+      return false;
     }
 
-    if(isNakedStructType(qt))
-      continue;
+    if(auto ns = isNakedStructType(qt)) {
+      if(ns.isOk())
+        continue;
 
-    if(check)
-      check->diag((*it)->getLocation(), "member not allowed at naked struct");
-      
+      isNakedStructType(qt, dh); //for report
+      dh.diag((*it)->getLocation(), "unsafe type at naked_struct declaration");
+      return false;
+    }
+
+    //if none of the above, then is an error
+    isSafeType(qt, dh);
+    dh.diag((*it)->getLocation(), "member not allowed at naked struct");
     return false;
   }
 
   auto b = decl->bases();
   if(b.begin() != b.end()) {
-    if(check)
-      check->diag(b.begin()->getLocStart(), "inheritance not allowed at naked struct");
+    dh.diag(b.begin()->getLocStart(), "inheritance not allowed at naked struct");
     return false;//don't allow any bases yet
   }
 
@@ -133,21 +140,21 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
       continue;
 
     if(auto ctr = dyn_cast<CXXConstructorDecl>(method)) {
-      if(!missingInitializers.empty()) {
-        auto inits = ctr->inits();
-        std::list<const FieldDecl*> decls(missingInitializers);
-        for(auto jt = inits.begin();jt != inits.end(); ++jt) {
-          if((*jt)->isMemberInitializer()) {
-              decls.remove((*jt)->getMember());
-          }
-        }
+      // if(!missingInitializers.empty()) {
+      //   auto inits = ctr->inits();
+      //   std::list<const FieldDecl*> decls(missingInitializers);
+      //   for(auto jt = inits.begin();jt != inits.end(); ++jt) {
+      //     if((*jt)->isMemberInitializer()) {
+      //         decls.remove((*jt)->getMember());
+      //     }
+      //   }
 
-        if(!decls.empty()) {
-          if(check)
-            check->diag(method->getLocation(), "constructor of naked struct has uninitialized raw pointers");
-          return false;
-        }
-      }
+      //   if(!decls.empty()) {
+      //     if(check)
+      //       check->diag(method->getLocation(), "constructor of naked struct has uninitialized raw pointers");
+      //     return false;
+      //   }
+      // }
       continue;
     }
 
@@ -162,8 +169,7 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
         continue;
     }
     
-    if(check)
-      check->diag(method->getLocation(), "method not allowed at naked struct");
+    dh.diag(method->getLocation(), "method not allowed at naked struct");
     return false;
   }
   
@@ -172,31 +178,27 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, ClangTidyCheck *check) {
 }
 
 
-bool isNakedStructType(QualType qt, bool allowImplicit) {
+KindCheck isNakedStructType(QualType qt, DiagHelper& dh) {
 
   assert(qt.isCanonical());
  
-  if (auto decl = qt->getAsCXXRecordDecl()) {
+  auto decl = qt->getAsCXXRecordDecl();
 
-    if (!decl || !decl->hasDefinition())
-      return false;
+  if (!decl || !decl->hasDefinition())
+    return KindCheck(false, false);
 
-    // first verify if is a well known class,
-    auto name = decl->getQualifiedNameAsString();
-    if (isNakedStructName(name))
-      return true;
+  // first verify if is a well known class,
+  auto name = decl->getQualifiedNameAsString();
+  if (isNakedStructName(name))
+    return KindCheck(true, true);
   
-    //if it has attribute, the some other rule
-    // must have verified it
-    if(decl->hasAttr<NodeCppNakedStructAttr>())
-      return true;
+  //if it has attribute, the some other rule
+  // must have verified it
+  if(decl->hasAttr<NodeCppNakedStructAttr>())
+    return KindCheck(true, checkNakedStructRecord(decl));
 
-    if(allowImplicit)
-      return checkNakedStructRecord(decl, nullptr);
-  }
-  
-    //t->dump();
-  return false;
+  //t->dump();
+  return KindCheck(false, false);
 }
 
 bool isLambdaType(QualType qt) {
@@ -309,14 +311,19 @@ bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
 
 
 
-bool isNakedPointerType(QualType qt) {
+KindCheck isNakedPointerType(QualType qt, DiagHelper& dh) {
   
   auto decl = getTemplatePtrDecl(qt);
   if(!decl)
-    return false;
+    return KindCheck(false, false);
 
   auto name = decl->getQualifiedNameAsString();
-  return isNakedPtrName(name);
+  if(isNakedPtrName(name)) {
+    QualType pointee = getPointeeType(qt);
+    return KindCheck(true, isSafeType(pointee));
+  }
+
+  return KindCheck(false, false);
 }
 
 

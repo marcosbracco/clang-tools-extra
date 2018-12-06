@@ -19,16 +19,11 @@ namespace tidy {
 namespace nodecpp {
 
 void NakedStructCheck::registerMatchers(MatchFinder *Finder) {
-  Finder->addMatcher(cxxRecordDecl(hasAttr(clang::attr::NodeCppNakedStruct)).bind("nake"), this);
+
 }
 
 void NakedStructCheck::check(const MatchFinder::MatchResult &Result) {
-  // FIXME: Add callback implementation.
-  auto decl = Result.Nodes.getNodeAs<CXXRecordDecl>("nake");
 
-  if(decl && decl->hasDefinition()) {
-    checkNakedStructRecord(decl, this);    
-  }
 }
 
 } // namespace nodecpp

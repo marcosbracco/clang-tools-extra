@@ -130,36 +130,30 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
 
-  if(isNakedPointerType(qt)) {
+  if(auto np = isNakedPointerType(qt)) {
+    if(np.isOk()) {
+      //this is all for naked_ptr
+      return;
 
-    if(!checkNakedPointerType(qt, this)) {
-      diag(var->getLocation(), "unsafe type at naked_ptr declaration");
+    }
+
+    auto dh = DiagHelper(this);
+    dh.diag(var->getLocation(), "unsafe naked_ptr at variable declaration");
+    isNakedPointerType(qt, dh); //for report
+    return;
+  }
+
+  if(auto ns = isNakedStructType(qt)) {
+    if(ns.isOk()) {
+      if(var->hasAttr<NodeCppMayExtendAttr>()) {
+        diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
+      }
       return;
     }
-    
-    //this is all for naked_ptr
-    return;
-  }
 
-  if(isNakedStructType(qt)) {
-
-    //naked struct internal is checked at other place
-    if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
-    }
-
-    // this is all for naked_struct
-    return;
-  }
-
-  if(isImplicitNakedStructType(qt)) {
-
-    //naked struct internal is checked at other place
-    if(var->hasAttr<NodeCppMayExtendAttr>()) {
-      diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
-    }
-
-    // this is all for iplicit naked struct
+    auto dh = DiagHelper(this);
+    dh.diag(var->getLocation(), "unsafe naked_struct at variable declaration");
+    isNakedStructType(qt, dh); //for report
     return;
   }
 

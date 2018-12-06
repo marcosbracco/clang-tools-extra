@@ -1,4 +1,4 @@
-// RUN: clang-tidy %s --checks=-*,nodecpp-var-decl -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
+// RUN: clang-tidy %s -- -std=c++11 -nostdinc++ -isystem %S/Inputs | FileCheck %s -check-prefix=CHECK-MESSAGES -implicit-check-not="{{warning|error}}:"
 
 #include <safe_ptr.h>
 
@@ -27,8 +27,8 @@ void safeFun() {
 	owning_ptr<Safe3> s3Ptr;
 }
 
-//implicit naked struct
-struct NakedStr {
+
+struct [[nodecpp::naked_struct]] NakedStr {
 	naked_ptr<int> ptr;
 
 	naked_ptr<int> get() const;
@@ -46,14 +46,16 @@ void nakedFunc() {
 }
 
 struct Bad1 {
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: unsafe type declaration
 	int* ptr;
 };
 
 struct Bad2 : public NakedStr {
-
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: unsafe type declaration
 };
 
 struct Bad3 {
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: unsafe type declaration
 	int* ptr;
 
 	void set(int* ptr);
@@ -66,8 +68,7 @@ void badFunc() {
 	NakedStr* nakedPtr = nullptr; // bad
 // CHECK-MESSAGES: :[[@LINE-1]]:12: warning: Unsafe raw pointer declaration [nodecpp-var-decl]
 	Bad1 b1; //bad
-	b1 = Bad1(); //this forces Bad1::operator= to be instantiated
-// CHECK-MESSAGES: :[[@LINE-2]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 
 	Bad2 b2; //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
