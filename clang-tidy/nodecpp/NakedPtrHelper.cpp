@@ -789,6 +789,8 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
     }
   } else if (isa<CXXNullPtrLiteralExpr>(from)) {
     return true;
+  } else if (isa<IntegerLiteral>(from)) {
+    return true;
   } else if (auto declRef = dyn_cast<DeclRefExpr>(from)) {
     return checkDeclRefExpr(declRef);
   } else if (auto callExpr = dyn_cast<CallExpr>(from)) {
@@ -798,12 +800,12 @@ bool NakedPtrScopeChecker::checkExpr(const Expr *from) {
     // TODO verify only members and not methods will get in here
     return checkExpr(member->getBase());
   } else if (auto op = dyn_cast<UnaryOperator>(from)) {
-    if (op->getOpcode() == UnaryOperatorKind::UO_AddrOf) {
-      return checkExpr(op->getSubExpr());
-    }
-
-    from->dumpColor();
-    return false;
+    return checkExpr(op->getSubExpr());
+  } else if (auto op = dyn_cast<BinaryOperator>(from)) {
+    if(checkExpr(op->getLHS()))
+      return checkExpr(op->getRHS());
+    else    
+      return false;
   } else if (auto defArg = dyn_cast<CXXDefaultArgExpr>(from)) {
     return checkExpr(defArg->getExpr());
   } else if (auto op = dyn_cast<ConditionalOperator>(from)) {

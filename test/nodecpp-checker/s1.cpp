@@ -6,11 +6,9 @@ void bad() {
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: (S1.3)
 
 	a = a + 1;
-// CHECK-MESSAGES: :[[@LINE-1]]:4: warning: assignment of raw pointer may extend scope
-// CHECK-MESSAGES: :[[@LINE-2]]:8: warning: (S1)
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: (S1)
 	a = a - 1;
-// CHECK-MESSAGES: :[[@LINE-1]]:4: warning: assignment of raw pointer may extend scope
-// CHECK-MESSAGES: :[[@LINE-2]]:8: warning: (S1)
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: (S1)
 	a += 1;
 // CHECK-MESSAGES: :[[@LINE-1]]:4: warning: (S1)
 	a -= 1;
