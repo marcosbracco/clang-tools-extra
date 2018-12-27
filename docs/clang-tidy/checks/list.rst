@@ -183,12 +183,12 @@ Clang-Tidy Checks
    nodecpp-may-extend-lambda
    nodecpp-naked-assignment
    nodecpp-naked-ptr-return
-   nodecpp-naked-struct
    nodecpp-new-expr
    nodecpp-ptr-arithmetic
    nodecpp-raw-pointer-assignment
    nodecpp-raw-pointer-dereference
    nodecpp-raw-ptr-cast
+   nodecpp-raw-ptr-expr
    nodecpp-record-decl
    nodecpp-static-storage
    nodecpp-std-function

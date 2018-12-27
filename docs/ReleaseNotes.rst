@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-naked-struct' check was renamed to `nodecpp-raw-ptr-expr
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-ptr-expr.html>`_
+
 - The 'nodecpp-contructor-expr' check was renamed to `nodecpp-temporary-expr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-temporary-expr.html>`_
 

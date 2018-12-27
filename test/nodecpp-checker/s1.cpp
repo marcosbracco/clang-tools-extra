@@ -26,6 +26,5 @@ void bad() {
 
 	int b = 0;
 	int c = (&b)[0];
-// CHECK-MESSAGES: :[[@LINE-1]]:11: warning: (S1) address-of operator found here
-// CHECK-MESSAGES: :[[@LINE-2]]:16: warning: do not use index operator on unsafe types [nodecpp-ptr-arithmetic]
+// CHECK-MESSAGES: :[[@LINE-1]]:16: warning: do not use index operator on unsafe types [nodecpp-ptr-arithmetic]
 }

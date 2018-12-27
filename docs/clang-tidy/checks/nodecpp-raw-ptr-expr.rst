@@ -1,6 +1,6 @@
-.. title:: clang-tidy - nodecpp-naked-struct
+.. title:: clang-tidy - nodecpp-raw-ptr-expr
 
-nodecpp-naked-struct
+nodecpp-raw-ptr-expr
 ====================
 
 FIXME: Describe what patterns does the check detect and why. Give examples.

@@ -9,7 +9,6 @@ void func() {
 	int i = 0;
 	memset(&i,0,sizeof(i));
 // CHECK-MESSAGES: :[[@LINE-1]]:2: warning: (S8)
-// CHECK-MESSAGES: :[[@LINE-2]]:9: warning: (S1) address-of operator found here
 
 
 	func(); // ok, defined in safe code
