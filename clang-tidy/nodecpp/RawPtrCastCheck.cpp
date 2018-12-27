@@ -18,9 +18,8 @@ namespace tidy {
 namespace nodecpp {
 
 void RawPtrCastCheck::registerMatchers(MatchFinder *Finder) {
-
+/*
   Finder->addMatcher(cxxStaticCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
-//  Finder->addMatcher(cxxStaticCastExpr(allOf( hasDestinationType(referenceType()), unless(hasDestinationType(rValueReferenceType())) )).bind("cast"), this);
   Finder->addMatcher(cxxStaticCastExpr( hasDestinationType(lValueReferenceType()) ).bind("cast"), this);
   	
   Finder->addMatcher(cxxReinterpretCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
@@ -28,6 +27,7 @@ void RawPtrCastCheck::registerMatchers(MatchFinder *Finder) {
   
   Finder->addMatcher(cStyleCastExpr(hasDestinationType(pointerType())).bind("cast"), this);
   Finder->addMatcher(cStyleCastExpr(hasDestinationType(referenceType())).bind("cast"), this);
+*/
 }
 
 void RawPtrCastCheck::check(const MatchFinder::MatchResult &Result) {

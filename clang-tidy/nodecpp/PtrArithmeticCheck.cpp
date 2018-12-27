@@ -24,6 +24,7 @@ void PtrArithmeticCheck::registerMatchers(MatchFinder *Finder) {
   //  return;
 
   // Flag all operators +, -, +=, -=, ++, -- that result in a pointer
+/*
   Finder->addMatcher(
       binaryOperator(
           anyOf(hasOperatorName("+"), hasOperatorName("-"),
@@ -38,15 +39,13 @@ void PtrArithmeticCheck::registerMatchers(MatchFinder *Finder) {
                     hasType(pointerType()))
           .bind("expr"),
       this);
-
+*/
   // Array subscript on a pointer (not an array) is also pointer arithmetic
   Finder->addMatcher(
-      arraySubscriptExpr(
-          hasBase(ignoringImpCasts(
-              anyOf(hasType(pointerType()),
-                    hasType(decayedType(hasDecayedType(pointerType())))))))
+      arraySubscriptExpr()
           .bind("arr"),
       this);
+
 }
 
 void PtrArithmeticCheck::check(const MatchFinder::MatchResult &Result) {
