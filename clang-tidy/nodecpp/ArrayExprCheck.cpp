@@ -1,4 +1,4 @@
-//===--- ArrayCheck.cpp - clang-tidy---------------------------------------===//
+//===--- ArrayExprCheck.cpp - clang-tidy-----------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ArrayCheck.h"
+#include "ArrayExprCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
@@ -17,7 +17,7 @@ namespace clang {
 namespace tidy {
 namespace nodecpp {
 
-void ArrayCheck::registerMatchers(MatchFinder *Finder) {
+void ArrayExprCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(typeLoc(loc(arrayType())).bind("type"), this);
 
@@ -28,7 +28,7 @@ void ArrayCheck::registerMatchers(MatchFinder *Finder) {
 
 }
 
-void ArrayCheck::check(const MatchFinder::MatchResult &Result) {
+void ArrayExprCheck::check(const MatchFinder::MatchResult &Result) {
 
   if(auto t = Result.Nodes.getNodeAs<TypeLoc>("type")) {
     diag(t->getLocStart(), "do not use arrays");
