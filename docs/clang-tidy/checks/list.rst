@@ -175,7 +175,7 @@ Clang-Tidy Checks
    modernize-use-using
    mpi-buffer-deref
    mpi-type-mismatch
-   nodecpp-array-type
+   nodecpp-array
    nodecpp-asm
    nodecpp-call-expr
    nodecpp-const

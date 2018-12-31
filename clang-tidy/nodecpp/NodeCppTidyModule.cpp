@@ -10,7 +10,7 @@
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
-#include "ArrayTypeCheck.h"
+#include "ArrayCheck.h"
 #include "AsmCheck.h"
 #include "CallExprCheck.h"
 #include "ConstCheck.h"
@@ -39,8 +39,8 @@ namespace nodecpp {
 class NodeCppModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
-    CheckFactories.registerCheck<ArrayTypeCheck>(
-        "nodecpp-array-type");
+    CheckFactories.registerCheck<ArrayCheck>(
+        "nodecpp-array");
     CheckFactories.registerCheck<AsmCheck>(
         "nodecpp-asm");
     CheckFactories.registerCheck<CallExprCheck>(

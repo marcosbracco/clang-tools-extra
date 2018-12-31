@@ -1,4 +1,4 @@
-//===--- ArrayTypeCheck.h - clang-tidy---------------------------*- C++ -*-===//
+//===--- ArrayCheck.h - clang-tidy---------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,10 +19,10 @@ namespace nodecpp {
 /// FIXME: Write a short description.
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-array-type.html
-class ArrayTypeCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-array.html
+class ArrayCheck : public ClangTidyCheck {
 public:
-  ArrayTypeCheck(StringRef Name, ClangTidyContext *Context)
+  ArrayCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;

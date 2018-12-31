@@ -31,6 +31,9 @@ infrastructure are described first, followed by tool-specific sections.
 Improvements to clang-tidy
 --------------------------
 
+- The 'nodecpp-array-type' check was renamed to `nodecpp-array
+  <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-array.html>`_
+
 - The 'nodecpp-naked-struct' check was renamed to `nodecpp-raw-ptr-expr
   <http://clang.llvm.org/extra/clang-tidy/checks/nodecpp-raw-ptr-expr.html>`_
 
