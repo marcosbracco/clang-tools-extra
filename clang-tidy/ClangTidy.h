@@ -185,6 +185,8 @@ protected:
   StringRef getCurrentMainFile() const { return Context->getCurrentFile(); }
   /// \brief Returns the language options from the context.
   LangOptions getLangOpts() const { return Context->getLangOpts(); }
+  /// \brief Returns the context.
+  ClangTidyContext* getContext() const { return Context; }
 };
 
 class ClangTidyCheckFactories;

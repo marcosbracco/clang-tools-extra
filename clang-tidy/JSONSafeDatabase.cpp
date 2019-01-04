@@ -164,7 +164,7 @@ JSONSafeDatabase::loadFromDirectory(StringRef BuildDirectory,
   if (std::unique_ptr<JSONSafeDatabase> DB =
           loadFromDirectory2(BuildDirectory, DatabaseErrorMessage))
     return DB;
-  ErrorStream << "json-safe-database" << ": " << DatabaseErrorMessage << "\n";
+  ErrorStream << "json-safe-library-database" << ": " << DatabaseErrorMessage << "\n";
   return nullptr;
 }
 
@@ -225,7 +225,7 @@ JSONSafeDatabase::autoDetectFromDirectory(StringRef SourceDir,
 std::unique_ptr<JSONSafeDatabase>
 JSONSafeDatabase::loadFromDirectory2(StringRef Directory, std::string &ErrorMessage) {
   SmallString<1024> JSONDatabasePath(Directory);
-  llvm::sys::path::append(JSONDatabasePath, "safe_functions.json");
+  llvm::sys::path::append(JSONDatabasePath, "safe_library.json");
   return loadFromFile(
       JSONDatabasePath, ErrorMessage, JSONCommandLineSyntax::AutoDetect);
 }
@@ -300,20 +300,6 @@ JSONSafeDatabase::getAllCompileCommands() const {
   getCommands(AllCommands, Commands);
   return Commands;
 }
-
-std::set<std::string> JSONSafeDatabase::getTypes() const {
-  std::set<std::string> Types;
-  getValues(AllTypes, Types);
-  return Types;
-}
-
-std::set<std::string> JSONSafeDatabase::getFunctions() const {
-  std::set<std::string> Functions;
-  getValues(AllFunctions, Functions);
-  return Functions;
-
-}
-
 
 static std::vector<std::string>
 nodeToCommandLine(JSONCommandLineSyntax Syntax,

@@ -42,9 +42,10 @@ void CallExprCheck::check(const MatchFinder::MatchResult &Result) {
   if(!manager->isInSystemHeader(eLoc))
     return; // this is in safe code, then is ok
  
- 
+
   std::string name = decl->getQualifiedNameAsString();
-  if(isSafeFunctionName(name))
+  auto& s = getContext()->getGlobalOptions().SafeFunctions;
+  if(s.find(name) != s.end())
     return;
 
   diag(expr->getExprLoc(), "(S8) unsafe function call is prohibited");

@@ -47,8 +47,6 @@ public:
 
 /// FIXME: Write a short description.
 ///
-bool isSafeFunctionName(const std::string& name);
-
 bool isOwnerPtrName(const std::string &Name);
 bool isOwningPtrRecord(const CXXRecordDecl *decl);
 bool isSafePtrName(const std::string &Name);

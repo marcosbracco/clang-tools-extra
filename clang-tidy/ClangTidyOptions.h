@@ -42,7 +42,7 @@ struct FileFilter {
 struct ClangTidyGlobalOptions {
   ClangTidyGlobalOptions() {}
 
-  ClangTidyGlobalOptions(std::set<std::string> SafeTypes, std::set<std::string> SafeFunctions)
+  ClangTidyGlobalOptions(std::set<std::string> SafeFunctions, std::set<std::string> SafeTypes)
     :SafeFunctions(std::move(SafeFunctions)), SafeTypes(std::move(SafeTypes))  {}
 
 

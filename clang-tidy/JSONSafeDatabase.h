@@ -120,9 +120,14 @@ public:
   std::vector<clang::tooling::CompileCommand> getAllCompileCommands() const override;
 
   /// \brief Returns the set of safe types names.
-  std::set<std::string> getTypes() const;
+  void getTypes(std::set<std::string>& Types) const {
+    getValues(AllTypes, Types);
+  }
+  
   /// \brief Returns the set of safe functions names.
-  std::set<std::string> getFunctions() const;
+  void getFunctions(std::set<std::string>& Functions) const {
+    getValues(AllFunctions, Functions);
+  }
 
 
 private:

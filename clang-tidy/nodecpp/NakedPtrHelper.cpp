@@ -19,16 +19,6 @@ namespace nodecpp {
 
 DiagHelper NullDiagHelper;
 
-bool isSafeFunctionName(const std::string& name) {
-  
-  if(name.substr(0, 9) == "nodecpp::")
-    return true;
-  else if(name == "fmt::v5::print")
-    return true;
-
-  return false;
-}
-
 bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr" || Name == "owning_ptr";
 }

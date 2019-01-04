@@ -363,13 +363,17 @@ static int clangTidyMain(int argc, const char **argv) {
     Safes = JSONSafeDatabase::autoDetectFromSource(FilePath,
                                                               ErrorMessage);
 //  }
+
+  std::set<std::string> SafeFunctions;
+  std::set<std::string> SafeTypes;
+
   if (!Safes) {
     llvm::errs() << "Error while trying to load a safe functions database:\n"
                   << ErrorMessage << "Running without safe functions database.\n";
+  } else {
+    Safes->getFunctions(SafeFunctions);
+    Safes->getTypes(SafeTypes);
   }
-
-  auto SafeFunctions = Safes->getFunctions();
-  auto SafeTypes = Safes->getTypes();
 
   auto OwningOptionsProvider = createOptionsProvider(std::move(SafeFunctions), std::move(SafeTypes));
   auto *OptionsProvider = OwningOptionsProvider.get();
