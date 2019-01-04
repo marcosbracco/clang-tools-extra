@@ -7,6 +7,7 @@ add_clang_library(clangTidy
   ClangTidyModule.cpp
   ClangTidyDiagnosticConsumer.cpp
   ClangTidyOptions.cpp
+  JSONSafeDatabase.cpp
 
   DEPENDS
   ClangSACheckers

@@ -16,6 +16,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "../ClangTidy.h"
+#include "../JSONSafeDatabase.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/TargetSelect.h"
@@ -280,8 +281,8 @@ static void printProfileData(const ProfileData &Profile,
   OS.flush();
 }
 
-static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider() {
-  ClangTidyGlobalOptions GlobalOptions;
+static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider(std::set<std::string> SafeFunctions, std::set<std::string> SafeTypes) {
+  ClangTidyGlobalOptions GlobalOptions(std::move(SafeFunctions), std::move(SafeTypes));
   if (std::error_code Err = parseLineFilter(LineFilter, GlobalOptions)) {
     llvm::errs() << "Invalid LineFilter: " << Err.message() << "\n\nUsage:\n";
     llvm::cl::PrintHelpMessage(/*Hidden=*/false, /*Categorized=*/true);
@@ -341,11 +342,6 @@ static int clangTidyMain(int argc, const char **argv) {
   CommonOptionsParser OptionsParser(argc, argv, ClangTidyCategory,
                                     cl::ZeroOrMore);
 
-  auto OwningOptionsProvider = createOptionsProvider();
-  auto *OptionsProvider = OwningOptionsProvider.get();
-  if (!OptionsProvider)
-    return 1;
-
   StringRef FileName("dummy");
   auto PathList = OptionsParser.getSourcePathList();
   if (!PathList.empty()) {
@@ -357,6 +353,29 @@ static int clangTidyMain(int argc, const char **argv) {
     llvm::errs() << "Can't make absolute path from " << FileName << ": "
                  << EC.message() << "\n";
   }
+
+  std::string ErrorMessage;
+  std::unique_ptr<JSONSafeDatabase> Safes;
+  // if (!BuildPath.empty()) {
+  //   Safes =
+  //       CompilationDatabase::autoDetectFromDirectory(BuildPath, ErrorMessage);
+  // } else {
+    Safes = JSONSafeDatabase::autoDetectFromSource(FilePath,
+                                                              ErrorMessage);
+//  }
+  if (!Safes) {
+    llvm::errs() << "Error while trying to load a safe functions database:\n"
+                  << ErrorMessage << "Running without safe functions database.\n";
+  }
+
+  auto SafeFunctions = Safes->getFunctions();
+  auto SafeTypes = Safes->getTypes();
+
+  auto OwningOptionsProvider = createOptionsProvider(std::move(SafeFunctions), std::move(SafeTypes));
+  auto *OptionsProvider = OwningOptionsProvider.get();
+  if (!OptionsProvider)
+    return 1;
+
   ClangTidyOptions EffectiveOptions = OptionsProvider->getOptions(FilePath);
   std::vector<std::string> EnabledChecks = getCheckNames(EffectiveOptions);
 

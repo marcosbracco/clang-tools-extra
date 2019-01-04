@@ -20,6 +20,7 @@
 #include <system_error>
 #include <utility>
 #include <vector>
+#include <set>
 
 namespace clang {
 namespace tidy {
@@ -39,9 +40,20 @@ struct FileFilter {
 /// \brief Global options. These options are neither stored nor read from
 /// configuration files.
 struct ClangTidyGlobalOptions {
+  ClangTidyGlobalOptions() {}
+
+  ClangTidyGlobalOptions(std::set<std::string> SafeTypes, std::set<std::string> SafeFunctions)
+    :SafeFunctions(std::move(SafeFunctions)), SafeTypes(std::move(SafeTypes))  {}
+
+
   /// \brief Output warnings from certain line ranges of certain files only.
   /// If empty, no warnings will be filtered.
   std::vector<FileFilter> LineFilter;
+
+  /// \brief Set of functions names from standard library that are safe.
+  std::set<std::string> SafeFunctions;
+  /// \brief Set of types names from standard library that are safe.
+  std::set<std::string> SafeTypes;
 };
 
 /// \brief Contains options for clang-tidy. These options may be read from
