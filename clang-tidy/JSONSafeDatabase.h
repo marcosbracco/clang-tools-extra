@@ -45,8 +45,7 @@ namespace tidy {
 ///   ...
 /// ]
 ///
-enum class JSONCommandLineSyntax { Windows, Gnu, AutoDetect };
-class JSONSafeDatabase : public clang::tooling::CompilationDatabase {
+class JSONSafeDatabase {
 public:
 
   /// \brief Loads a compilation database from a build directory.
@@ -92,32 +91,13 @@ public:
   /// Returns NULL and sets ErrorMessage if the database could not be
   /// loaded from the given file.
   static std::unique_ptr<JSONSafeDatabase>
-  loadFromFile(StringRef FilePath, std::string &ErrorMessage,
-               JSONCommandLineSyntax Syntax);
+  loadFromFile(StringRef FilePath, std::string &ErrorMessage);
 
   /// \brief Loads a JSON safe database from a data buffer.
   ///
   /// Returns NULL and sets ErrorMessage if the database could not be loaded.
   static std::unique_ptr<JSONSafeDatabase>
-  loadFromBuffer(StringRef DatabaseString, std::string &ErrorMessage,
-                 JSONCommandLineSyntax Syntax);
-
-  /// \brief Returns all compile commands in which the specified file was
-  /// compiled.
-  ///
-  /// FIXME: Currently FilePath must be an absolute path inside the
-  /// source directory which does not have symlinks resolved.
-  std::vector<clang::tooling::CompileCommand>
-  getCompileCommands(StringRef FilePath) const override;
-
-  /// \brief Returns the list of all files available in the compilation database.
-  ///
-  /// These are the 'file' entries of the JSON objects.
-  std::vector<std::string> getAllFiles() const override;
-
-  /// \brief Returns all compile commands for all the files in the compilation
-  /// database.
-  std::vector<clang::tooling::CompileCommand> getAllCompileCommands() const override;
+  loadFromBuffer(StringRef DatabaseString, std::string &ErrorMessage);
 
   /// \brief Returns the set of safe types names.
   void getTypes(std::set<std::string>& Types) const {
@@ -132,50 +112,27 @@ public:
 
 private:
   /// \brief Constructs a JSON safe database on a memory buffer.
-  JSONSafeDatabase(std::unique_ptr<llvm::MemoryBuffer> Database,
-                          JSONCommandLineSyntax Syntax)
-      : Database(std::move(Database)), Syntax(Syntax),
+  JSONSafeDatabase(std::unique_ptr<llvm::MemoryBuffer> Database)
+      : Database(std::move(Database)),
         YAMLStream(this->Database->getBuffer(), SM) {}
 
+
+  void getValues(ArrayRef<llvm::yaml::ScalarNode*> Refs,
+                   std::set<std::string> &Values) const;
+                   
   /// \brief Parses the database file and creates the index.
   ///
   /// Returns whether parsing succeeded. Sets ErrorMessage if parsing
   /// failed.
   bool parse(std::string &ErrorMessage);
 
-  // Tuple (directory, filename, commandline, output) where 'commandline'
-  // points to the corresponding scalar nodes in the YAML stream.
-  // If the command line contains a single argument, it is a shell-escaped
-  // command line.
-  // Otherwise, each entry in the command line vector is a literal
-  // argument to the compiler.
-  // The output field may be a nullptr.
-  typedef std::tuple<llvm::yaml::ScalarNode *,
-                     llvm::yaml::ScalarNode *,
-                     std::vector<llvm::yaml::ScalarNode *>,
-                     llvm::yaml::ScalarNode *> CompileCommandRef;
-
-  /// \brief Converts the given array of CompileCommandRefs to CompileCommands.
-  void getCommands(ArrayRef<CompileCommandRef> CommandsRef,
-                   std::vector<clang::tooling::CompileCommand> &Commands) const;
-
-  /// \brief Converts the given array of yaml refs to strings.
-  void getValues(ArrayRef<llvm::yaml::ScalarNode*> Refs,
-                   std::set<std::string> &Values) const;
-
-  // Maps file paths to the compile command lines for that file.
-  llvm::StringMap<std::vector<CompileCommandRef>> IndexByFile;
 
   /// All the compile commands in the order that they were provided in the
   /// JSON stream.
-  std::vector<CompileCommandRef> AllCommands;
   std::vector<llvm::yaml::ScalarNode*> AllFunctions;
   std::vector<llvm::yaml::ScalarNode*> AllTypes;
 
-  clang::tooling::FileMatchTrie MatchTrie;
-
   std::unique_ptr<llvm::MemoryBuffer> Database;
-  JSONCommandLineSyntax Syntax;
   llvm::SourceMgr SM;
   llvm::yaml::Stream YAMLStream;
 };

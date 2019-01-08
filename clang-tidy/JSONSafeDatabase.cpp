@@ -26,136 +26,6 @@
 namespace clang {
 namespace tidy {
 
-namespace {
-
-/// \brief A parser for escaped strings of command line arguments.
-///
-/// Assumes \-escaping for quoted arguments (see the documentation of
-/// unescapeCommandLine(...)).
-class CommandLineArgumentParser {
- public:
-  CommandLineArgumentParser(StringRef CommandLine)
-      : Input(CommandLine), Position(Input.begin()-1) {}
-
-  std::vector<std::string> parse() {
-    bool HasMoreInput = true;
-    while (HasMoreInput && nextNonWhitespace()) {
-      std::string Argument;
-      HasMoreInput = parseStringInto(Argument);
-      CommandLine.push_back(Argument);
-    }
-    return CommandLine;
-  }
-
- private:
-  // All private methods return true if there is more input available.
-
-  bool parseStringInto(std::string &String) {
-    do {
-      if (*Position == '"') {
-        if (!parseDoubleQuotedStringInto(String)) return false;
-      } else if (*Position == '\'') {
-        if (!parseSingleQuotedStringInto(String)) return false;
-      } else {
-        if (!parseFreeStringInto(String)) return false;
-      }
-    } while (*Position != ' ');
-    return true;
-  }
-
-  bool parseDoubleQuotedStringInto(std::string &String) {
-    if (!next()) return false;
-    while (*Position != '"') {
-      if (!skipEscapeCharacter()) return false;
-      String.push_back(*Position);
-      if (!next()) return false;
-    }
-    return next();
-  }
-
-  bool parseSingleQuotedStringInto(std::string &String) {
-    if (!next()) return false;
-    while (*Position != '\'') {
-      String.push_back(*Position);
-      if (!next()) return false;
-    }
-    return next();
-  }
-
-  bool parseFreeStringInto(std::string &String) {
-    do {
-      if (!skipEscapeCharacter()) return false;
-      String.push_back(*Position);
-      if (!next()) return false;
-    } while (*Position != ' ' && *Position != '"' && *Position != '\'');
-    return true;
-  }
-
-  bool skipEscapeCharacter() {
-    if (*Position == '\\') {
-      return next();
-    }
-    return true;
-  }
-
-  bool nextNonWhitespace() {
-    do {
-      if (!next()) return false;
-    } while (*Position == ' ');
-    return true;
-  }
-
-  bool next() {
-    ++Position;
-    return Position != Input.end();
-  }
-
-  const StringRef Input;
-  StringRef::iterator Position;
-  std::vector<std::string> CommandLine;
-};
-
-std::vector<std::string> unescapeCommandLine(JSONCommandLineSyntax Syntax,
-                                             StringRef EscapedCommandLine) {
-  if (Syntax == JSONCommandLineSyntax::AutoDetect) {
-    Syntax = JSONCommandLineSyntax::Gnu;
-    llvm::Triple Triple(llvm::sys::getProcessTriple());
-    if (Triple.getOS() == llvm::Triple::OSType::Win32) {
-      // Assume Windows command line parsing on Win32 unless the triple
-      // explicitly tells us otherwise.
-      if (!Triple.hasEnvironment() ||
-          Triple.getEnvironment() == llvm::Triple::EnvironmentType::MSVC)
-        Syntax = JSONCommandLineSyntax::Windows;
-    }
-  }
-
-  if (Syntax == JSONCommandLineSyntax::Windows) {
-    llvm::BumpPtrAllocator Alloc;
-    llvm::StringSaver Saver(Alloc);
-    llvm::SmallVector<const char *, 64> T;
-    llvm::cl::TokenizeWindowsCommandLine(EscapedCommandLine, Saver, T);
-    std::vector<std::string> Result(T.begin(), T.end());
-    return Result;
-  }
-  assert(Syntax == JSONCommandLineSyntax::Gnu);
-  CommandLineArgumentParser parser(EscapedCommandLine);
-  return parser.parse();
-}
-
-// class JSONSafeDatabasePlugin : public clang::tooling::CompilationDatabasePlugin {
-// };
-
-} // end namespace
-
-// Register the JSONSafeDatabasePlugin with the
-// CompilationDatabasePluginRegistry using this statically initialized variable.
-// static clang::tooling::CompilationDatabasePluginRegistry::Add<JSONSafeDatabasePlugin>
-// X("json-compilation-database", "Reads JSON formatted compilation databases");
-
-// This anchor is used to force the linker to link in the generated object file
-// and thus register the JSONSafeDatabasePlugin.
-//volatile int JSONAnchorSource = 0;
-
 std::unique_ptr<JSONSafeDatabase>
 JSONSafeDatabase::loadFromDirectory(StringRef BuildDirectory,
                                        std::string &ErrorMessage) {
@@ -227,13 +97,12 @@ JSONSafeDatabase::loadFromDirectory2(StringRef Directory, std::string &ErrorMess
   SmallString<1024> JSONDatabasePath(Directory);
   llvm::sys::path::append(JSONDatabasePath, "safe_library.json");
   return loadFromFile(
-      JSONDatabasePath, ErrorMessage, JSONCommandLineSyntax::AutoDetect);
+      JSONDatabasePath, ErrorMessage);
 }
 
 std::unique_ptr<JSONSafeDatabase>
 JSONSafeDatabase::loadFromFile(StringRef FilePath,
-                                      std::string &ErrorMessage,
-                                      JSONCommandLineSyntax Syntax) {
+                                      std::string &ErrorMessage) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> DatabaseBuffer =
       llvm::MemoryBuffer::getFile(FilePath);
   if (std::error_code Result = DatabaseBuffer.getError()) {
@@ -241,7 +110,7 @@ JSONSafeDatabase::loadFromFile(StringRef FilePath,
     return nullptr;
   }
   std::unique_ptr<JSONSafeDatabase> Database(
-      new JSONSafeDatabase(std::move(*DatabaseBuffer), Syntax));
+      new JSONSafeDatabase(std::move(*DatabaseBuffer)));
   if (!Database->parse(ErrorMessage))
     return nullptr;
   return Database;
@@ -249,87 +118,16 @@ JSONSafeDatabase::loadFromFile(StringRef FilePath,
 
 std::unique_ptr<JSONSafeDatabase>
 JSONSafeDatabase::loadFromBuffer(StringRef DatabaseString,
-                                        std::string &ErrorMessage,
-                                        JSONCommandLineSyntax Syntax) {
+                                        std::string &ErrorMessage) {
   std::unique_ptr<llvm::MemoryBuffer> DatabaseBuffer(
       llvm::MemoryBuffer::getMemBuffer(DatabaseString));
   std::unique_ptr<JSONSafeDatabase> Database(
-      new JSONSafeDatabase(std::move(DatabaseBuffer), Syntax));
+      new JSONSafeDatabase(std::move(DatabaseBuffer)));
   if (!Database->parse(ErrorMessage))
     return nullptr;
   return Database;
 }
 
-std::vector<clang::tooling::CompileCommand>
-JSONSafeDatabase::getCompileCommands(StringRef FilePath) const {
-  SmallString<128> NativeFilePath;
-  llvm::sys::path::native(FilePath, NativeFilePath);
-
-  std::string Error;
-  llvm::raw_string_ostream ES(Error);
-  StringRef Match = MatchTrie.findEquivalent(NativeFilePath, ES);
-  if (Match.empty())
-    return std::vector<clang::tooling::CompileCommand>();
-  llvm::StringMap< std::vector<CompileCommandRef> >::const_iterator
-    CommandsRefI = IndexByFile.find(Match);
-  if (CommandsRefI == IndexByFile.end())
-    return std::vector<clang::tooling::CompileCommand>();
-  std::vector<clang::tooling::CompileCommand> Commands;
-  getCommands(CommandsRefI->getValue(), Commands);
-  return Commands;
-}
-
-std::vector<std::string>
-JSONSafeDatabase::getAllFiles() const {
-  std::vector<std::string> Result;
-
-  llvm::StringMap< std::vector<CompileCommandRef> >::const_iterator
-    CommandsRefI = IndexByFile.begin();
-  const llvm::StringMap< std::vector<CompileCommandRef> >::const_iterator
-    CommandsRefEnd = IndexByFile.end();
-  for (; CommandsRefI != CommandsRefEnd; ++CommandsRefI) {
-    Result.push_back(CommandsRefI->first().str());
-  }
-
-  return Result;
-}
-
-std::vector<clang::tooling::CompileCommand>
-JSONSafeDatabase::getAllCompileCommands() const {
-  std::vector<clang::tooling::CompileCommand> Commands;
-  getCommands(AllCommands, Commands);
-  return Commands;
-}
-
-static std::vector<std::string>
-nodeToCommandLine(JSONCommandLineSyntax Syntax,
-                  const std::vector<llvm::yaml::ScalarNode *> &Nodes) {
-  SmallString<1024> Storage;
-  if (Nodes.size() == 1) {
-    return unescapeCommandLine(Syntax, Nodes[0]->getValue(Storage));
-  }
-  std::vector<std::string> Arguments;
-  for (auto *Node : Nodes) {
-    Arguments.push_back(Node->getValue(Storage));
-  }
-  return Arguments;
-}
-
-void JSONSafeDatabase::getCommands(
-    ArrayRef<CompileCommandRef> CommandsRef,
-    std::vector<clang::tooling::CompileCommand> &Commands) const {
-  for (int I = 0, E = CommandsRef.size(); I != E; ++I) {
-    SmallString<8> DirectoryStorage;
-    SmallString<32> FilenameStorage;
-    SmallString<32> OutputStorage;
-    auto Output = std::get<3>(CommandsRef[I]);
-    Commands.emplace_back(
-        std::get<0>(CommandsRef[I])->getValue(DirectoryStorage),
-        std::get<1>(CommandsRef[I])->getValue(FilenameStorage),
-        nodeToCommandLine(Syntax, std::get<2>(CommandsRef[I])),
-        Output ? Output->getValue(OutputStorage) : "");
-  }
-}
 
 void JSONSafeDatabase::getValues(ArrayRef<llvm::yaml::ScalarNode*> Refs,
                    std::set<std::string> &Values) const {
