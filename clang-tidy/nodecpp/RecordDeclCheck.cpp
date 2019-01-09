@@ -43,20 +43,20 @@ void RecordDeclCheck::check(const MatchFinder::MatchResult &Result) {
       return;
 
     if(rd->hasAttr<NodeCppNakedStructAttr>()) {
-      if(checkNakedStructRecord(rd))
+      if(checkNakedStructRecord(rd, getContext()))
         return;
 
       auto dh = DiagHelper(this);
       dh.diag(rd->getLocation(), "unsafe naked_struct declaration");
-      checkNakedStructRecord(rd, dh);
+      checkNakedStructRecord(rd, getContext(), dh);
     }
     else {
-      if(isSafeRecord(rd))
+      if(isSafeRecord(rd, getContext()))
         return;
 
       auto dh = DiagHelper(this);
       dh.diag(rd->getLocation(), "unsafe type declaration");
-      isSafeRecord(rd, dh);
+      isSafeRecord(rd, getContext(), dh);
     }
   }
 }

@@ -202,6 +202,7 @@ void ClangTidyContext::setDiagnosticsEngine(DiagnosticsEngine *Engine) {
 }
 
 void ClangTidyContext::setSourceManager(SourceManager *SourceMgr) {
+  this->SourceMgr = SourceMgr;
   DiagEngine->setSourceManager(SourceMgr);
 }
 

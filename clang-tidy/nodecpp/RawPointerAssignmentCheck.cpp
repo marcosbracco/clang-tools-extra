@@ -31,7 +31,7 @@ void RawPointerAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
   
   auto expr = Result.Nodes.getNodeAs<BinaryOperator>("expr");
 
-  auto checker = NakedPtrScopeChecker::makeChecker(this, Result.Context, expr->getLHS());
+  auto checker = NakedPtrScopeChecker::makeChecker(this, getContext(), Result.Context, expr->getLHS());
 
   if(!checker.checkExpr(expr->getRHS()))
     diag(expr->getExprLoc(), "assignment of raw pointer may extend scope");

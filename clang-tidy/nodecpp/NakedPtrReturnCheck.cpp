@@ -27,7 +27,7 @@ void NakedPtrReturnCheck::check(const MatchFinder::MatchResult &Result) {
   auto stmt = Result.Nodes.getNodeAs<ReturnStmt>("stmt");
 
   auto expr = stmt->getRetValue();
-  auto ch = NakedPtrScopeChecker::makeParamScopeChecker(this);
+  auto ch = NakedPtrScopeChecker::makeParamScopeChecker(this, getContext());
   if(!ch.checkExpr(expr)) 
       diag(expr->getExprLoc(), "return of naked pointer may extend scope");
 

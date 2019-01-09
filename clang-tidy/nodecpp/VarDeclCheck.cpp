@@ -87,14 +87,14 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  if (isSafeType(qt)) {
+  if (isSafeType(qt, getContext())) {
     return;
   }
 
   if(qt->isReferenceType()) {
     //non-const reference only from safe types
     QualType inner = qt->getPointeeType().getCanonicalType();
-    if(!isSafeType(inner)) {
+    if(!isSafeType(inner, getContext())) {
       diag(var->getLocation(), "(S5.3) non-const reference of unsafe type is prohibited");
     }
 
@@ -106,23 +106,23 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
 
   if(isRawPointerType(qt)) {
-    if(!checkRawPointerType(qt, this)) {
-      diag(var->getLocation(), "Unsafe raw pointer declaration");
-      return;
-    }
+    // if(!checkRawPointerType(qt, this)) {
+    //   diag(var->getLocation(), "Unsafe raw pointer declaration");
+    //   return;
+    // }
 
     
-    //params don't need initializer
-    if(isParam) {
-      diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
-      return;
-    }
+    // //params don't need initializer
+    // if(isParam) {
+    //   diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
+    //   return;
+    // }
     
-    auto e = var->getInit();
-    if(!e) {
-      diag(var->getLocation(), "raw pointer type must have initializer");
-      return;
-    }
+    // auto e = var->getInit();
+    // if(!e) {
+    //   diag(var->getLocation(), "raw pointer type must have initializer");
+    //   return;
+    // }
 
     //this is all for raw pointer
     diag(var->getLocation(), "(S1.3) raw pointer declaration is prohibited");
@@ -130,7 +130,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
 
-  if(auto np = isNakedPointerType(qt)) {
+  if(auto np = isNakedPointerType(qt, getContext())) {
     if(np.isOk()) {
       //this is all for naked_ptr
       return;
@@ -139,11 +139,11 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
     auto dh = DiagHelper(this);
     dh.diag(var->getLocation(), "unsafe naked_ptr at variable declaration");
-    isNakedPointerType(qt, dh); //for report
+    isNakedPointerType(qt, getContext(), dh); //for report
     return;
   }
 
-  if(auto ns = isNakedStructType(qt)) {
+  if(auto ns = isNakedStructType(qt, getContext())) {
     if(ns.isOk()) {
       if(var->hasAttr<NodeCppMayExtendAttr>()) {
         diag(var->getLocation(), "may_extend not implemented for naked struct variables yet");
@@ -153,7 +153,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
     auto dh = DiagHelper(this);
     dh.diag(var->getLocation(), "unsafe naked_struct at variable declaration");
-    isNakedStructType(qt, dh); //for report
+    isNakedStructType(qt, getContext(), dh); //for report
     return;
   }
 
@@ -170,7 +170,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto dh = DiagHelper(this);
   dh.diag(var->getLocation(), "unsafe type at variable declaration");
-  isSafeType(qt, dh);
+  isSafeType(qt, getContext(), dh);
 
   return;
 }

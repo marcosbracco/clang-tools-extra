@@ -28,7 +28,7 @@ void TemporaryExprCheck::check(const MatchFinder::MatchResult &Result) {
   if(auto tmp = Result.Nodes.getNodeAs<CXXTemporaryObjectExpr>("tmp")) {
 
     QualType qt = tmp->getType().getCanonicalType();
-    if (isSafeType(qt))
+    if (isSafeType(qt, getContext()))
       return;
     if(isParamOnlyType(qt))
       return;
@@ -36,23 +36,23 @@ void TemporaryExprCheck::check(const MatchFinder::MatchResult &Result) {
     if(isRawPointerType(qt))
       return;
     
-    if(auto np = isNakedPointerType(qt)) {
+    if(auto np = isNakedPointerType(qt, getContext())) {
       if(np.isOk())
         return;
 
       auto dh = DiagHelper(this);
       dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
-      isNakedPointerType(qt, dh); //for report
+      isNakedPointerType(qt, getContext(), dh); //for report
       return;
     }
     
-    if(auto ns = isNakedStructType(qt)) {
+    if(auto ns = isNakedStructType(qt, getContext())) {
       if(ns.isOk())
         return;
 
       auto dh = DiagHelper(this);
       dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
-      isNakedStructType(qt, dh); //for report
+      isNakedStructType(qt, getContext(), dh); //for report
       return;
     }
 
@@ -62,7 +62,7 @@ void TemporaryExprCheck::check(const MatchFinder::MatchResult &Result) {
 //    tmp->dump();
     auto dh = DiagHelper(this);
     dh.diag(tmp->getExprLoc(), "unsafe type at temporary expression");
-    isSafeType(qt, dh);
+    isSafeType(qt, getContext(), dh);
   }
 }
 

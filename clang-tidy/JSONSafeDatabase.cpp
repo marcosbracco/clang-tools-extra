@@ -160,10 +160,10 @@ bool JSONSafeDatabase::parse(std::string &ErrorMessage) {
       ErrorMessage = "Expected object.";
       return false;
     }
-    llvm::yaml::ScalarNode *Directory = nullptr;
-    llvm::Optional<std::vector<llvm::yaml::ScalarNode *>> Command;
-    llvm::yaml::ScalarNode *File = nullptr;
-    llvm::yaml::ScalarNode *Output = nullptr;
+    // llvm::yaml::ScalarNode *Directory = nullptr;
+    // llvm::Optional<std::vector<llvm::yaml::ScalarNode *>> Command;
+    // llvm::yaml::ScalarNode *File = nullptr;
+    // llvm::yaml::ScalarNode *Output = nullptr;
     llvm::Optional<std::vector<llvm::yaml::ScalarNode *>> Functions;
     llvm::Optional<std::vector<llvm::yaml::ScalarNode *>> Types;
     for (auto& NextKeyValue : *Object) {
@@ -180,8 +180,8 @@ bool JSONSafeDatabase::parse(std::string &ErrorMessage) {
         ErrorMessage = "Expected value.";
         return false;
       }
-      llvm::yaml::ScalarNode *ValueString =
-          dyn_cast<llvm::yaml::ScalarNode>(Value);
+      // llvm::yaml::ScalarNode *ValueString =
+      //     dyn_cast<llvm::yaml::ScalarNode>(Value);
       llvm::yaml::SequenceNode *SequenceString =
           dyn_cast<llvm::yaml::SequenceNode>(Value);
       // if (KeyValue == "arguments" && !SequenceString) {
@@ -195,26 +195,27 @@ bool JSONSafeDatabase::parse(std::string &ErrorMessage) {
         ErrorMessage = "Expected sequence as value.";
         return false;
       }
-      if (KeyValue == "directory") {
-        Directory = ValueString;
-      } else if (KeyValue == "arguments") {
-        Command = std::vector<llvm::yaml::ScalarNode *>();
-        for (auto &Argument : *SequenceString) {
-          auto Scalar = dyn_cast<llvm::yaml::ScalarNode>(&Argument);
-          if (!Scalar) {
-            ErrorMessage = "Only strings are allowed in 'arguments'.";
-            return false;
-          }
-          Command->push_back(Scalar);
-        }
-      } else if (KeyValue == "command") {
-        if (!Command)
-          Command = std::vector<llvm::yaml::ScalarNode *>(1, ValueString);
-      } else if (KeyValue == "file") {
-        File = ValueString;
-      } else if (KeyValue == "output") {
-        Output = ValueString;
-      } else if (KeyValue == "functions") {
+      // if (KeyValue == "directory") {
+      //   Directory = ValueString;
+      // } else if (KeyValue == "arguments") {
+      //   Command = std::vector<llvm::yaml::ScalarNode *>();
+      //   for (auto &Argument : *SequenceString) {
+      //     auto Scalar = dyn_cast<llvm::yaml::ScalarNode>(&Argument);
+      //     if (!Scalar) {
+      //       ErrorMessage = "Only strings are allowed in 'arguments'.";
+      //       return false;
+      //     }
+      //     Command->push_back(Scalar);
+      //   }
+      // } else if (KeyValue == "command") {
+      //   if (!Command)
+      //     Command = std::vector<llvm::yaml::ScalarNode *>(1, ValueString);
+      // } else if (KeyValue == "file") {
+      //   File = ValueString;
+      // } else if (KeyValue == "output") {
+      //   Output = ValueString;
+      // } else 
+      if (KeyValue == "functions") {
         Functions = std::vector<llvm::yaml::ScalarNode *>();
         for (auto &Argument : *SequenceString) {
           auto Scalar = dyn_cast<llvm::yaml::ScalarNode>(&Argument);

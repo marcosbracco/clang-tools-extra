@@ -31,14 +31,14 @@ void NakedAssignmentCheck::check(const MatchFinder::MatchResult &Result) {
   if(expr->getNumArgs() == 2) {
     auto left = expr->getArg(0);
     QualType lqt = left->getType().getCanonicalType();
-    if(isNakedPointerType(lqt)) {
-        auto checker = NakedPtrScopeChecker::makeChecker(this, Result.Context, left);
+    if(isNakedPointerType(lqt, getContext())) {
+        auto checker = NakedPtrScopeChecker::makeChecker(this, getContext(), Result.Context, left);
 
         if(!checker.checkExpr(expr->getArg(1)))
             diag(expr->getExprLoc(), "assignment of naked_ptr may extend scope");
     }
-    else if(isNakedStructType(lqt)) {
-        auto checker = NakedPtrScopeChecker::makeChecker(this, Result.Context, left);
+    else if(isNakedStructType(lqt, getContext())) {
+        auto checker = NakedPtrScopeChecker::makeChecker(this, getContext(), Result.Context, left);
 
         if(!checker.checkExpr(expr->getArg(1)))
             diag(expr->getExprLoc(), "assignment of naked_struct may extend scope");

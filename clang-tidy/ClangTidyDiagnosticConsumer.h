@@ -186,6 +186,10 @@ public:
     return CurrentBuildDirectory;
   }
 
+  SourceManager* getSourceManager() const {
+    return SourceMgr;
+  }
+
 private:
   // Calls setDiagnosticsEngine() and storeError().
   friend class ClangTidyDiagnosticConsumer;
@@ -217,6 +221,7 @@ private:
   llvm::DenseMap<unsigned, std::string> CheckNamesByDiagnosticID;
 
   ProfileData *Profile;
+  SourceManager *SourceMgr;
 };
 
 /// \brief A diagnostic consumer that turns each \c Diagnostic into a

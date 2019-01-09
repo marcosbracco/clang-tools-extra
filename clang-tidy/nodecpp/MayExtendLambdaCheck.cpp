@@ -50,7 +50,7 @@ bool MayExtendLambdaCheck::checkLambda(const LambdaExpr *lamb, std::pair<bool, c
     case LCK_ByCopy: {
       auto d = it->getCapturedVar();
       auto qt = d->getType().getCanonicalType();
-      if (isSafeType(qt))
+      if (isSafeType(qt, getContext()))
         break;
 
       if (d->hasGlobalStorage())
@@ -319,7 +319,7 @@ void MayExtendLambdaCheck::check(const MatchFinder::MatchResult &Result) {
         continue;
       } else {
         if(mayExtend.first) {
-          auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this);
+          auto ch = NakedPtrScopeChecker::makeThisScopeChecker(this, getContext());
           if(ch.checkExpr(e))
             continue;
         }

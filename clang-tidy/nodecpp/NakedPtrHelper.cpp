@@ -19,6 +19,21 @@ namespace nodecpp {
 
 DiagHelper NullDiagHelper;
 
+bool isSystemLocation(const ClangTidyContext* context, SourceLocation loc) {
+
+  auto sm = context->getSourceManager();
+  auto eLoc = sm->getExpansionLoc(loc);
+
+  return (eLoc.isValid() && sm->isInSystemHeader(eLoc));
+}
+
+bool isSystemSafeName(const ClangTidyContext* context, const std::string& name) {
+
+  auto& wl = context->getGlobalOptions().SafeTypes; 
+  return (wl.find(name) != wl.end());
+}
+
+
 bool isOwnerPtrName(const std::string &Name) {
   return Name == "std::unique_ptr" || Name == "nodecpp::owning_ptr" || Name == "owning_ptr";
 }
@@ -69,7 +84,7 @@ bool isParamOnlyType(QualType qt) {
   return isStdFunctionType(qt) || isNodecppFunctionOwnedArg0Type(qt);
 }
 
-bool checkNakedStructRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
+bool checkNakedStructRecord(const CXXRecordDecl *decl, const ClangTidyContext* context, DiagHelper& dh) {
 
   //on debug break here
   assert(decl);
@@ -88,29 +103,29 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
   for (auto it = f.begin(); it != f.end(); ++it) {
 
     auto qt = (*it)->getType().getCanonicalType(); 
-    if(isSafeType(qt))
+    if(isSafeType(qt, context))
       continue;
 
-    if(auto np = isNakedPointerType(qt)) {
+    if(auto np = isNakedPointerType(qt, context)) {
       if(np.isOk())
         continue;
 
-      isNakedPointerType(qt, dh); //for report
+      isNakedPointerType(qt, context, dh); //for report
       dh.diag((*it)->getLocation(), "unsafe type at naked_ptr declaration");
       return false;
     }
 
-    if(auto ns = isNakedStructType(qt)) {
+    if(auto ns = isNakedStructType(qt, context)) {
       if(ns.isOk())
         continue;
 
-      isNakedStructType(qt, dh); //for report
+      isNakedStructType(qt, context, dh); //for report
       dh.diag((*it)->getLocation(), "unsafe type at naked_struct declaration");
       return false;
     }
 
     //if none of the above, then is an error
-    isSafeType(qt, dh);
+    isSafeType(qt, context, dh);
     dh.diag((*it)->getLocation(), "member not allowed at naked struct");
     return false;
   }
@@ -168,7 +183,7 @@ bool checkNakedStructRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
 }
 
 
-KindCheck isNakedStructType(QualType qt, DiagHelper& dh) {
+KindCheck isNakedStructType(QualType qt, const ClangTidyContext* context, DiagHelper& dh) {
 
   assert(qt.isCanonical());
  
@@ -185,7 +200,7 @@ KindCheck isNakedStructType(QualType qt, DiagHelper& dh) {
   //if it has attribute, the some other rule
   // must have verified it
   if(decl->hasAttr<NodeCppNakedStructAttr>())
-    return KindCheck(true, checkNakedStructRecord(decl));
+    return KindCheck(true, checkNakedStructRecord(decl, context));
 
   //t->dump();
   return KindCheck(false, false);
@@ -215,16 +230,6 @@ bool isNodecppFunctionOwnedArg0Type(QualType qt) {
     return false;
 
   return decl->getQualifiedNameAsString() == "nodecpp::function_owned_arg0";
-}
-
-bool checkRawPointerType(QualType qt, ClangTidyCheck *check) {
-  
-  assert(qt.isCanonical());
-
-  assert(isRawPointerType(qt));
-  QualType pointee = qt->getPointeeType().getCanonicalType();
-
-  return isSafeType(pointee);
 }
 
 bool isRawPointerType(QualType qt) {
@@ -289,19 +294,8 @@ QualType unwrapConstRefType(QualType qt) {
   return qt;
 }
 
-bool checkNakedPointerType(QualType qt, ClangTidyCheck *check) {
 
-//  qt = qt.getCanonicalType();
-
-  assert(isNakedPointerType(qt));
-  QualType pointee = getPointeeType(qt);
-
-  return isSafeType(pointee);
-}
-
-
-
-KindCheck isNakedPointerType(QualType qt, DiagHelper& dh) {
+KindCheck isNakedPointerType(QualType qt, const ClangTidyContext* context, DiagHelper& dh) {
   
   auto decl = getTemplatePtrDecl(qt);
   if(!decl)
@@ -310,7 +304,7 @@ KindCheck isNakedPointerType(QualType qt, DiagHelper& dh) {
   auto name = decl->getQualifiedNameAsString();
   if(isNakedPtrName(name)) {
     QualType pointee = getPointeeType(qt);
-    return KindCheck(true, isSafeType(pointee));
+    return KindCheck(true, isSafeType(pointee, context, dh));
   }
 
   return KindCheck(false, false);
@@ -327,18 +321,25 @@ bool isSafePtrType(QualType qt) {
   return isSafePtrName(name);
 }
 
+bool isSafeRecord(const CXXRecordDecl *decl, const ClangTidyContext* context, DiagHelper& dh) {
 
-bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
-
-  if (!decl || !decl->hasDefinition()) {
+  if (!decl) {
     return false;
   }
 
-  // first verify if is a well known class,
-  auto name = decl->getQualifiedNameAsString();
-  if (isSafeName(name))
-    return true;
-  else if (isUnsafeName(name))
+  if(isSystemLocation(context, decl->getLocation())) {
+    // if record is in system header, fate is decided by white list 
+    std::string name = decl->getQualifiedNameAsString();
+    if(isSystemSafeName(context, name)) {
+      return true;
+    } else {
+      dh.diag(decl->getLocation(), "system library type is not safe");
+      return false;
+    }
+  }
+
+  // if we don't have a definition, we can't check
+  if(!decl->hasDefinition())
     return false;
 
   if(decl->isUnion()) {
@@ -348,7 +349,7 @@ bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
   auto F = decl->fields();
   for (auto It = F.begin(); It != F.end(); ++It) {
     auto ft = (*It)->getType().getCanonicalType();
-    if (!isSafeType(ft, dh)) {
+    if (!isSafeType(ft, context, dh)) {
       dh.diag((*It)->getLocation(), "member is not safe");
       return false;
     }
@@ -358,7 +359,7 @@ bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
   for (auto It = B.begin(); It != B.end(); ++It) {
 
     auto bt = It->getType().getCanonicalType();
-    if (!isSafeType(bt, dh)) {
+    if (!isSafeType(bt, context, dh)) {
       dh.diag((*It).getBaseTypeLoc(), "base class is not safe");
       return false;
     }
@@ -369,7 +370,7 @@ bool isSafeRecord(const CXXRecordDecl *decl, DiagHelper& dh) {
 }
 
 
-bool isSafeType(QualType qt, DiagHelper& dh) {
+bool isSafeType(QualType qt, const ClangTidyContext* context, DiagHelper& dh) {
 
   assert(qt.isCanonical());
 
@@ -380,9 +381,9 @@ bool isSafeType(QualType qt, DiagHelper& dh) {
   } else if (qt->isBuiltinType()) {
     return true;
   } else if(isSafePtrType(qt)) {
-    return isSafeType(getPointeeType(qt), dh);
+    return isSafeType(getPointeeType(qt), context, dh);
   } else if (auto rd = qt->getAsCXXRecordDecl()) {
-    return isSafeRecord(rd, dh);
+    return isSafeRecord(rd, context, dh);
   } else if (qt->isTemplateTypeParmType()) {
     // we will take care at instantiation
     return true;
@@ -541,20 +542,20 @@ const DeclStmt* getParentDeclStmt(ASTContext *context, const Decl* decl) {
     return nullptr;
 }
 
-bool canArgumentGenerateOutput(QualType out, QualType arg) {
+bool NakedPtrScopeChecker::canArgumentGenerateOutput(QualType out, QualType arg) {
 
   //until properly updated for naked_ptr template
   return true;
   // out.dump();
   // arg.dump();
 
-  if(isSafeType(arg))
+  if(isSafeType(arg, tidyContext))
     return false;
 
-  if(isNakedPointerType(arg))
+  if(isNakedPointerType(arg, tidyContext))
     return true;
   
-  if(isNakedStructType(arg))
+  if(isNakedStructType(arg, tidyContext))
     return true;
     
   if(arg->isReferenceType())
@@ -598,29 +599,29 @@ bool canArgumentGenerateOutput(QualType out, QualType arg) {
 
 bool NakedPtrScopeChecker::checkStack2StackAssignment(const Decl *fromDecl) {
 
-  if(!context || !outScopeDecl) {
+  if(!astContext || !outScopeDecl) {
     check->diag(fromDecl->getLocStart(), "Internal checker error, please report", DiagnosticIDs::Error);
     return false;
   }
   
-  auto fromStmt = getParentDeclStmt(context, fromDecl);
+  auto fromStmt = getParentDeclStmt(astContext, fromDecl);
   if (!fromStmt)
     return false;
 
-  auto toStmt = getParentDeclStmt(context, outScopeDecl);
+  auto toStmt = getParentDeclStmt(astContext, outScopeDecl);
   if (!toStmt)
     return false;
 
-  auto from = getParentStmt(context, fromStmt);
+  auto from = getParentStmt(astContext, fromStmt);
   if (!from)
     return false;
 
-  auto to = getParentStmt(context, toStmt);
+  auto to = getParentStmt(astContext, toStmt);
   while (to) {
     if (to == from)
       return true;
 
-    to = getParentStmt(context, to);
+    to = getParentStmt(astContext, to);
   }
 
   // we couldn't verify this is ok, assume the worst
@@ -870,24 +871,24 @@ NakedPtrScopeChecker::calculateScope(const Expr *expr) {
 }
 
 /* static */
-NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check,
-                                                       ASTContext *context,
+NakedPtrScopeChecker NakedPtrScopeChecker::makeChecker(ClangTidyCheck *check, ClangTidyContext* tidyContext,
+                                                       ASTContext *astContext,
                                                        const Expr *toExpr) {
 
   auto sc = NakedPtrScopeChecker::calculateScope(toExpr);
 
-  return NakedPtrScopeChecker(check, context, sc.first, sc.second);
+  return NakedPtrScopeChecker(check, tidyContext, astContext, sc.first, sc.second);
 }
 
 /* static */
-NakedPtrScopeChecker NakedPtrScopeChecker::makeThisScopeChecker(ClangTidyCheck *check) {
+NakedPtrScopeChecker NakedPtrScopeChecker::makeThisScopeChecker(ClangTidyCheck *check, ClangTidyContext* tidyContext) {
 
-  return NakedPtrScopeChecker(check, nullptr, This, nullptr);
+  return NakedPtrScopeChecker(check, tidyContext, nullptr, This, nullptr);
 }
 /* static */
-NakedPtrScopeChecker NakedPtrScopeChecker::makeParamScopeChecker(ClangTidyCheck *check) {
+NakedPtrScopeChecker NakedPtrScopeChecker::makeParamScopeChecker(ClangTidyCheck *check, ClangTidyContext* tidyContext) {
 
-  return NakedPtrScopeChecker(check, nullptr, Param, nullptr);
+  return NakedPtrScopeChecker(check, tidyContext, nullptr, Param, nullptr);
 }
 
 } // namespace tidy
