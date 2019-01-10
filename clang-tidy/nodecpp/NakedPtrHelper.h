@@ -54,13 +54,10 @@ bool isOwnerPtrName(const std::string &Name);
 bool isOwningPtrRecord(const CXXRecordDecl *decl);
 bool isSafePtrName(const std::string &Name);
 
-bool isSafeName(const std::string &Name);
-bool isNakedStructName(const std::string &Name);
 bool isNakedPtrName(const std::string& name);
-bool isUnsafeName(const std::string &Name);
 
 bool isStdFunctionType(QualType qt);
-bool isParamOnlyType(QualType qt);
+bool isAnyFunctionType(QualType qt);
 
 bool checkNakedStructRecord(const CXXRecordDecl *decl, const ClangTidyContext* context, DiagHelper& dh = NullDiagHelper);
 KindCheck isNakedStructType(QualType qt, const ClangTidyContext* context, DiagHelper& dh = NullDiagHelper);

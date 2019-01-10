@@ -64,9 +64,9 @@ struct Bad3 {
 
 void badFunc() {
 	int** i = nullptr; //bad
-// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: Unsafe raw pointer declaration [nodecpp-var-decl]
+// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: (S1.3)
 	NakedStr* nakedPtr = nullptr; // bad
-// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: Unsafe raw pointer declaration [nodecpp-var-decl]
+// CHECK-MESSAGES: :[[@LINE-1]]:12: warning: (S1.3)
 	Bad1 b1; //bad
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: unsafe type at variable declaration [nodecpp-var-decl]
 

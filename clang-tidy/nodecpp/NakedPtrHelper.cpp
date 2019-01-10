@@ -47,25 +47,8 @@ bool isSafePtrName(const std::string &Name) {
    Name == "nodecpp::safe_ptr" || Name == "soft_ptr";
 }
 
-bool isSafeName(const std::string &Name) {
-  return isSafePtrName(Name) ||
-  Name == "nodecpp::net::Socket" ||
-         Name == "nodecpp::net::Server" || Name == "nodecpp::net::Address" ||
-         Name == "nodecpp::net::SocketTBase" || Name == "nodecpp::Buffer";
-}
-
-bool isNakedStructName(const std::string &Name) {
-	//nothing here yet
-  return false;
-}
-
 bool isNakedPtrName(const std::string& name) {
   return name == "nodecpp::naked_ptr" || name == "naked_ptr";
-}
-
-bool isUnsafeName(const std::string &Name) {
-	//nothing here yet
-  return isNakedStructName(Name) || isNakedPtrName(Name);
 }
 
 bool isStdFunctionType(QualType qt) {
@@ -79,7 +62,7 @@ bool isStdFunctionType(QualType qt) {
   return decl->getQualifiedNameAsString() == "std::function";
 }
 
-bool isParamOnlyType(QualType qt) {
+bool isAnyFunctionType(QualType qt) {
 
   return isStdFunctionType(qt) || isNodecppFunctionOwnedArg0Type(qt);
 }
@@ -192,10 +175,10 @@ KindCheck isNakedStructType(QualType qt, const ClangTidyContext* context, DiagHe
   if (!decl || !decl->hasDefinition())
     return KindCheck(false, false);
 
-  // first verify if is a well known class,
-  auto name = decl->getQualifiedNameAsString();
-  if (isNakedStructName(name))
-    return KindCheck(true, true);
+  // // first verify if is a well known class,
+  // auto name = decl->getQualifiedNameAsString();
+  // if (isNakedStructName(name))
+  //   return KindCheck(true, true);
   
   //if it has attribute, the some other rule
   // must have verified it

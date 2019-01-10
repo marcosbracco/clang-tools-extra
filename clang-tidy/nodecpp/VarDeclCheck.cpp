@@ -71,7 +71,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     }
   }
 
-  bool isParam = isa<ParmVarDecl>(var);
+//  bool isParam = isa<ParmVarDecl>(var);
   auto qt = var->getType().getCanonicalType();
 
   //unwrap const ref
@@ -102,7 +102,7 @@ void VarDeclCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  if(isParam && isParamOnlyType(qt))
+  if(isAnyFunctionType(qt))
     return;
 
   if(isRawPointerType(qt)) {
